@@ -1,0 +1,29 @@
+title: My Website  # サイトのタイトル
+description: A description of my website  # サイトの説明
+baseurl: "/new-website"  # リポジトリ名を入れます（リポジトリが "new-website" の場合）
+url: "https://KAFGAMES.github.io"  # GitHub PagesのURL（ユーザーのGitHub PagesのURL）
+
+theme: jekyll-theme-primer  # 使用するテーマ（GitHub Pagesがサポートしているテーマの1つ）
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-paginate
+  - jekyll-feed
+
+paginate: 5  # ページネーションの設定
+paginate_path: "/page:num/"
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+source: docs
+destination: docs/_site
+
+theme: minima
+
+encoding: utf-8
+
