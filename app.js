@@ -25,6 +25,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const memoInput = document.getElementById('memo-input');
     const memoSaveButton = document.getElementById('memo-save-btn');
     const monthlyBalanceDiv = document.getElementById('monthly-balance');
+
+    // Initial setup for displaying JPY in the input fields and balance
+    profitInput.value = `${profitInput.value || 0} JPY`;
+    expenseInput.value = `${expenseInput.value || 0} JPY`;
+    monthlyBalanceDiv.textContent = `月間損益: ${monthlyBalanceDiv.textContent || 0} JPY`;
+
+
     const goalInput = document.getElementById('goal-input');
     const goalSaveButton = document.getElementById('goal-save-btn');
     const goalChartCanvas = document.getElementById('goal-chart');
@@ -39,6 +46,64 @@ document.addEventListener('DOMContentLoaded', function() {
     const profitDetailModal = document.getElementById('profit-detail-modal');
     const expenseDetailModal = document.getElementById('expense-detail-modal');
     const categorySelect = document.getElementById('category-select');
+    // Add a dropdown for currency selection in HTML
+    const currencySelect = document.createElement('select');
+    
+    currencySelect.id = 'currency-select';
+    currencySelect.innerHTML = `
+        <option value="JPY">円</option>
+        <option value="USD">ドル</option>
+    `;
+    document.querySelector('.menu-right').appendChild(currencySelect);
+
+
+
+    // Fetch the currency exchange rate (assuming it's already obtained once daily and available in `usdToJpyRate`)
+    let usdToJpyRate = 0; // Placeholder, to be set from fetched data
+    async function fetchExchangeRate() {
+        try {
+            const response = await fetch('http://localhost:3000/api/usd-jpy');
+            const data = await response.json();
+            usdToJpyRate = data.rate || 1; // Default to 1 if the rate is not available
+        } catch (error) {
+            console.error('Error fetching exchange rate:', error);
+        }
+    }
+    fetchExchangeRate(); // Initial fetch
+        // Initial display of JPY in input fields and balance
+updateDisplayedAmounts();
+
+// Helper function to convert amounts based on selected currency
+function convertAmount(amount, toCurrency) {
+    if (toCurrency === 'USD' && usdToJpyRate) {
+        return (amount / usdToJpyRate).toFixed(2); // Convert JPY to USD
+    } else if (toCurrency === 'JPY' && usdToJpyRate) {
+        return (amount * usdToJpyRate).toFixed(0); // Convert USD back to JPY
+    }
+    return amount; // Return the original amount if currency or rate is missing
+}
+
+// Update displayed amounts based on currency selection
+currencySelect.addEventListener('change', () => {
+    updateDisplayedAmounts();
+});
+
+function updateDisplayedAmounts() {
+    const selectedCurrency = currencySelect.value;
+
+    // Update profit and expense display
+    const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
+    const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
+
+    profitInput.value = `${convertAmount(profitAmount, selectedCurrency)} ${selectedCurrency}`;
+    expenseInput.value = `${convertAmount(expenseAmount, selectedCurrency)} ${selectedCurrency}`;
+    
+    // Update monthly balance display
+    const balance = parseFloat(monthlyBalanceDiv.textContent.replace(/[^0-9.-]/g, '')) || 0;
+    monthlyBalanceDiv.textContent = `月間損益: ${convertAmount(balance, selectedCurrency)} ${selectedCurrency}`;
+}
+
+
 
     // ドル円レートを取得して表示
     async function fetchUsdJpyRate() {
@@ -776,7 +841,7 @@ function resetInputFields() {
             });
 
             const balance = totalProfit - totalExpense;
-            monthlyBalanceDiv.textContent = `月間損益: ${balance}`;
+            monthlyBalanceDiv.textContent = `月間損益: ${balance} JPY`;
 
             if (balance >= 0) {
                 monthlyBalanceDiv.style.color = 'green';
@@ -1124,7 +1189,7 @@ function resetInputFields() {
         }
 
         const balance = totalProfit - totalExpense;
-        monthlyBalanceDiv.textContent = `月間損益: ${balance}`;
+        monthlyBalanceDiv.textContent = `月間損益: ${balance} JPY`;
 
         if (balance >= 0) {
             monthlyBalanceDiv.style.color = 'green';
