@@ -16,15 +16,6 @@
             <select id="category-select">
                 <option value="" disabled selected>選択してください</option>
     <!-- カテゴリのオプションはJavaScriptで動的に追加されます -->
-                <option value="web3">web3収益</option>
-                <option value="blog">ブログ収益</option>
-                <option value="part-time">バイト収益</option>
-                <option value="food">食費</option>
-                <option value="social">交際費</option>
-                <option value="taxes">税金</option>
-                <option value="business">経費</option>
-                <option value="leisure">娯楽費</option>
-                <option value="total">合計</option>
             </select>
             
             <!-- 日記家計簿ボタン -->
@@ -46,7 +37,7 @@
                 <!-- 利益の入力欄と削除ボタンを囲むdivを追加 -->
                 <div class="input-with-delete">
                     <label for="profit-input"><span class="profit-label">利益:</span></label>
-                    <input type="number" id="profit-input" placeholder="利益額を入力">
+                    <input type="text" id="profit-input" placeholder="利益額を入力">
                     <!-- 利益の削除ボタンを追加 -->
                     <button class="delete-btn" id="delete-profit-btn">×</button>
                 </div>
@@ -66,7 +57,7 @@
                 <!-- 支出の入力欄と削除ボタンを囲むdivを追加 -->
                 <div class="input-with-delete">
                     <label for="expense-input"><span class="expense-label">支出:</span></label>
-                    <input type="number" id="expense-input" placeholder="支出額を入力">
+                    <input type="text" id="expense-input" placeholder="支出額を入力">
                     <!-- 支出の削除ボタンを追加 -->
                     <button class="delete-btn" id="delete-expense-btn">×</button>
                 </div>
@@ -147,10 +138,10 @@
         <h2>カテゴリ管理</h2>
         <div id="category-list">
         <!-- カテゴリー一覧がここに動的に追加されます -->
+        </div>
+        <button id="add-category-btn">新しいカテゴリを追加</button>
+        <button id="category-management-back-btn">戻る</button>
     </div>
-    <button id="add-category-btn">新しいカテゴリを追加</button>
-    <button id="category-management-back-btn">戻る</button>
-</div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>

@@ -1,8 +1,5 @@
 // app.js
 
-
-
-
 // グローバル変数の初期化（DOMに依存しないもの）
 let currentDate = new Date();
 let selectedDate = null;
@@ -11,6 +8,7 @@ let currentCategory = ''; // デフォルトのカテゴリ
 let profitDetails = [];
 let expenseDetails = [];
 let categoriesList = [];
+let categoryCurrencies = {}; // カテゴリごとの通貨設定を保持
 
 document.addEventListener('DOMContentLoaded', function() {
     // DOM要素の取得
@@ -31,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
     expenseInput.value = `${expenseInput.value || 0} JPY`;
     monthlyBalanceDiv.textContent = `月間損益: ${monthlyBalanceDiv.textContent || 0} JPY`;
 
-
     const goalInput = document.getElementById('goal-input');
     const goalSaveButton = document.getElementById('goal-save-btn');
     const goalChartCanvas = document.getElementById('goal-chart');
@@ -46,17 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const profitDetailModal = document.getElementById('profit-detail-modal');
     const expenseDetailModal = document.getElementById('expense-detail-modal');
     const categorySelect = document.getElementById('category-select');
-    // Add a dropdown for currency selection in HTML
-    const currencySelect = document.createElement('select');
-    
-    currencySelect.id = 'currency-select';
-    currencySelect.innerHTML = `
-        <option value="JPY">円</option>
-        <option value="USD">ドル</option>
-    `;
-    document.querySelector('.menu-right').appendChild(currencySelect);
-
-
 
     // Fetch the currency exchange rate (assuming it's already obtained once daily and available in `usdToJpyRate`)
     let usdToJpyRate = 0; // Placeholder, to be set from fetched data
@@ -70,49 +56,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     fetchExchangeRate(); // Initial fetch
-        // Initial display of JPY in input fields and balance
-updateDisplayedAmounts();
 
-// Helper function to convert amounts based on selected currency
-function convertAmount(amount, toCurrency) {
-    if (toCurrency === 'USD' && usdToJpyRate) {
-        return (amount / usdToJpyRate).toFixed(2); // Convert JPY to USD
-    } else if (toCurrency === 'JPY' && usdToJpyRate) {
-        return (amount * usdToJpyRate).toFixed(0); // Convert USD back to JPY
-    }
-    return amount; // Return the original amount if currency or rate is missing
-}
-
-// Update displayed amounts based on currency selection
-currencySelect.addEventListener('change', () => {
+    // Initial display of JPY in input fields and balance
     updateDisplayedAmounts();
-});
 
-function updateDisplayedAmounts() {
-    const selectedCurrency = currencySelect.value;
+    // Helper function to convert amounts based on selected currency
+    function convertAmount(amount, fromCurrency, toCurrency) {
+        if (fromCurrency === toCurrency) {
+            return amount;
+        }
+        if (fromCurrency === 'JPY' && toCurrency === 'USD' && usdToJpyRate) {
+            return (amount / usdToJpyRate).toFixed(2); // Convert JPY to USD
+        } else if (fromCurrency === 'USD' && toCurrency === 'JPY' && usdToJpyRate) {
+            return (amount * usdToJpyRate).toFixed(0); // Convert USD back to JPY
+        }
+        return amount; // Return the original amount if currency or rate is missing
+    }
 
-    // Update profit and expense display
-    const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
-    const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
+    // Update displayed amounts based on currency selection
+    function updateDisplayedAmounts() {
+        const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
 
-    profitInput.value = `${convertAmount(profitAmount, selectedCurrency)} ${selectedCurrency}`;
-    expenseInput.value = `${convertAmount(expenseAmount, selectedCurrency)} ${selectedCurrency}`;
-    
-    // Update monthly balance display
-    const balance = parseFloat(monthlyBalanceDiv.textContent.replace(/[^0-9.-]/g, '')) || 0;
-    monthlyBalanceDiv.textContent = `月間損益: ${convertAmount(balance, selectedCurrency)} ${selectedCurrency}`;
-}
+        // Update profit and expense display
+        const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
+        const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
 
+        profitInput.value = `${profitAmount} ${selectedCurrency}`;
+        expenseInput.value = `${expenseAmount} ${selectedCurrency}`;
 
+        // Update monthly balance display
+        const balance = parseFloat(monthlyBalanceDiv.textContent.replace(/[^0-9.-]/g, '')) || 0;
+        monthlyBalanceDiv.textContent = `月間損益: ${balance} ${selectedCurrency}`;
+    }
 
     // ドル円レートを取得して表示
     async function fetchUsdJpyRate() {
         try {
-            //const response = await fetch('http://localhost:3000/api/usd-jpy');
             const response = await fetch(`http://localhost:3000/api/usd-jpy?timestamp=${new Date().getTime()}`);
-
             const data = await response.json();
-    
+
             if (data.rate) {
                 const rateDisplay = document.getElementById('usd-jpy-rate');
                 rateDisplay.textContent = `ドル円: ${data.rate}円`;
@@ -123,12 +105,10 @@ function updateDisplayedAmounts() {
             console.error('為替レートの取得中にエラーが発生しました:', error);
         }
     }
+
     // 10秒ごとに為替レートを更新
-    //setInterval(fetchUsdJpyRate, 10000);
-
+    // setInterval(fetchUsdJpyRate, 10000);
     fetchUsdJpyRate();
-    
-
 
     // 「日記家計簿」ボタンのクリックイベント
     diaryLedgerButton.addEventListener('click', () => {
@@ -150,10 +130,11 @@ function updateDisplayedAmounts() {
     document.getElementById('add-category-btn').addEventListener('click', () => {
         const newCategoryName = prompt('新しいカテゴリ名を入力してください:');
         if (newCategoryName) {
+            const currency = confirm('このカテゴリはドルで管理しますか？\n「OK」をクリックするとドル、「キャンセル」をクリックすると円になります。') ? 'USD' : 'JPY';
             fetch('http://localhost:3000/api/addCategory', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newCategoryName })
+                body: JSON.stringify({ name: newCategoryName, currency })
             })
                 .then(response => response.json())
                 .then(() => {
@@ -205,8 +186,8 @@ function updateDisplayedAmounts() {
         if (currentCategory === '') {
             // カテゴリが選択されていない場合、入力を無効化
             resetInputFields();
-        monthlyBalanceDiv.textContent = '月間損益: 0';
-        } else　if (currentCategory === 'total') {
+            monthlyBalanceDiv.textContent = '月間損益: 0';
+        } else if (currentCategory === 'total') {
             profitInput.disabled = true;
             expenseInput.disabled = true;
             saveButton.disabled = true;
@@ -228,6 +209,7 @@ function updateDisplayedAmounts() {
             renderCalendarWithTotal();
             calculateTotalGoalAndUpdateChart();
             displayGoalAmount();
+            updateDisplayedAmounts();
         } else {
             profitInput.disabled = false;
             expenseInput.disabled = false;
@@ -243,6 +225,7 @@ function updateDisplayedAmounts() {
             renderCalendar(currentDate);
             calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
             displayGoalAmount();
+            updateDisplayedAmounts();
         }
 
         if (document.getElementById('memo-page').style.display === 'block') {
@@ -280,12 +263,13 @@ function updateDisplayedAmounts() {
     // 利益・支出の保存
     saveButton.addEventListener('click', () => {
         if (selectedDate) {
-            const profit = parseInt(profitInput.value, 10) || 0;
-            const expense = parseInt(expenseInput.value, 10) || 0;
+            const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
+            const profit = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
+            const expense = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
             const memo = memoInput.value || "";
             const profitDetailsStr = JSON.stringify(profitDetails);
             const expenseDetailsStr = JSON.stringify(expenseDetails);
-            saveDataToDatabase(currentCategory, selectedDate, profit, expense, memo, profitDetailsStr, expenseDetailsStr, () => {
+            saveDataToDatabase(currentCategory, selectedDate, profit, expense, memo, profitDetailsStr, expenseDetailsStr, selectedCurrency, () => {
                 renderCalendar(currentDate);
                 const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
                 if (selectedCell) {
@@ -298,12 +282,13 @@ function updateDisplayedAmounts() {
     // メモの保存
     memoSaveButton.addEventListener('click', () => {
         if (selectedDate) {
-            const profit = parseInt(profitInput.value, 10) || 0;
-            const expense = parseInt(expenseInput.value, 10) || 0;
+            const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
+            const profit = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
+            const expense = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
             const memo = memoInput.value || "";
             const profitDetailsStr = JSON.stringify(profitDetails);
             const expenseDetailsStr = JSON.stringify(expenseDetails);
-            saveDataToDatabase(currentCategory, selectedDate, profit, expense, memo, profitDetailsStr, expenseDetailsStr, () => {
+            saveDataToDatabase(currentCategory, selectedDate, profit, expense, memo, profitDetailsStr, expenseDetailsStr, selectedCurrency, () => {
                 renderCalendar(currentDate);
                 const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
                 if (selectedCell) {
@@ -315,7 +300,7 @@ function updateDisplayedAmounts() {
 
     // 利益の詳細を保存
     document.getElementById('save-profit-detail-btn').addEventListener('click', () => {
-        const amount = parseInt(document.getElementById('profit-detail-amount').value, 10) || 0;
+        const amount = parseFloat(document.getElementById('profit-detail-amount').value) || 0;
         const description = document.getElementById('profit-detail-description').value;
 
         profitDetails.push({ amount, description });
@@ -328,7 +313,7 @@ function updateDisplayedAmounts() {
 
     // 支出の詳細を保存
     document.getElementById('save-expense-detail-btn').addEventListener('click', () => {
-        const amount = parseInt(document.getElementById('expense-detail-amount').value, 10) || 0;
+        const amount = parseFloat(document.getElementById('expense-detail-amount').value) || 0;
         const description = document.getElementById('expense-detail-description').value;
 
         expenseDetails.push({ amount, description });
@@ -376,11 +361,12 @@ function updateDisplayedAmounts() {
 
     // 目標金額を保存
     goalSaveButton.addEventListener('click', () => {
-        const goalAmount = parseInt(goalInput.value, 10) || 0;
+        const goalAmount = parseFloat(goalInput.value) || 0;
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
+        const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
 
-        saveGoalToDatabase(currentCategory, year, month, goalAmount, () => {
+        saveGoalToDatabase(currentCategory, year, month, goalAmount, selectedCurrency, () => {
             displayGoalAmount();
             if (currentCategory === 'total') {
                 calculateTotalGoalAndUpdateChart();
@@ -424,12 +410,16 @@ function updateDisplayedAmounts() {
         fetch('http://localhost:3000/api/getCategories')
             .then(response => response.json())
             .then(categories => {
+                categoriesList = categories;
                 categorySelect.innerHTML = '<option value="" disabled>選択してください</option>'; // デフォルトの未選択オプション
 
                 const categoryListDiv = document.getElementById('category-list');
                 categoryListDiv.innerHTML = '';
 
                 categories.forEach(category => {
+                    // カテゴリの通貨を保存
+                    categoryCurrencies[category.name] = category.currency;
+
                     // プルダウンメニューにカテゴリを追加
                     const option = document.createElement('option');
                     option.value = category.name;
@@ -443,6 +433,20 @@ function updateDisplayedAmounts() {
                     const nameSpan = document.createElement('span');
                     nameSpan.textContent = category.name;
                     categoryDiv.appendChild(nameSpan);
+
+                    // 通貨表示
+                    const currencySpan = document.createElement('span');
+                    currencySpan.textContent = ` (${category.currency})`;
+                    categoryDiv.appendChild(currencySpan);
+
+                    // 通貨変更ボタン
+                    const currencyButton = document.createElement('button');
+                    currencyButton.textContent = '通貨変更';
+                    currencyButton.addEventListener('click', () => {
+                        const newCurrency = category.currency === 'JPY' ? 'USD' : 'JPY';
+                        updateCategoryCurrency(category.id, newCurrency);
+                    });
+                    categoryDiv.appendChild(currencyButton);
 
                     // 名前変更ボタン
                     const editButton = document.createElement('button');
@@ -485,43 +489,38 @@ function updateDisplayedAmounts() {
                 });
 
                 // 合計カテゴリを追加
-            const totalOption = document.createElement('option');
-            totalOption.value = 'total';
-            totalOption.text = '合計';
-            categorySelect.appendChild(totalOption);  // 一番下に追加
+                const totalOption = document.createElement('option');
+                totalOption.value = 'total';
+                totalOption.text = '合計';
+                categorySelect.appendChild(totalOption);  // 一番下に追加
 
                 categorySelect.value = currentCategory;
                 updateCurrentCategory();
 
                 // 最初のカテゴリを自動選択
-            if (categories.length > 0) {
-                currentCategory = categories[0].name;
-                categorySelect.value = currentCategory;
+                if (categories.length > 0) {
+                    currentCategory = categories[0].name;
+                    categorySelect.value = currentCategory;
 
- 
-                // 初期表示の目標金額を設定
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth() + 1;
-                getGoalForCategory(currentCategory, year, month, (currentGoal) => {
-                    goalDisplay.textContent = `現在の目標金額: ${currentGoal}`;
-                    goalInput.value = currentGoal;
-                });
-                //loadDataForSelectedDate();
-                // 初期ロードの場合にのみカレンダーを描画
-                //if (initialLoad) {
-                 //   renderCalendar(currentDate);
-               // }
-                // データをロードしてからカレンダーを描画
-                loadDataForMonth(currentCategory, currentDate, (dataForMonth) => {
-                    renderCalendar(currentDate, dataForMonth); // データを渡してカレンダーを描画
-                });
-            } else {
-                // カテゴリが存在しない場合、リセット
-                currentCategory = '';
-                resetInputFields();
-                renderCalendar(currentDate);
-            }
-        })
+                    // 初期表示の目標金額を設定
+                    const year = currentDate.getFullYear();
+                    const month = currentDate.getMonth() + 1;
+                    getGoalForCategory(currentCategory, year, month, (currentGoal) => {
+                        goalDisplay.textContent = `現在の目標金額: ${currentGoal}`;
+                        goalInput.value = currentGoal;
+                    });
+
+                    // データをロードしてからカレンダーを描画
+                    loadDataForMonth(currentCategory, currentDate, (dataForMonth) => {
+                        renderCalendar(currentDate, dataForMonth); // データを渡してカレンダーを描画
+                    });
+                } else {
+                    // カテゴリが存在しない場合、リセット
+                    currentCategory = '';
+                    resetInputFields();
+                    renderCalendar(currentDate);
+                }
+            })
             .catch(error => {
                 console.error('カテゴリのロードに失敗しました:', error);
             });
@@ -537,40 +536,40 @@ function updateDisplayedAmounts() {
             .then(response => response.json())
             .then(() => {
                 loadCategories();
-                 // 現在のカテゴリが削除された場合、プルダウンの一番上のカテゴリを選択
-        if (currentCategory === id) {
-            // カテゴリの一番上を選択する
-            const firstOption = categorySelect.options[1]; // インデックス1が最初の有効なカテゴリ
-            if (firstOption) {
-                currentCategory = firstOption.value;
-                categorySelect.value = currentCategory;
-                loadDataForSelectedDate(); // 新しいカテゴリに基づくデータをロード
-                renderCalendar(currentDate); // カレンダーを再描画
-            } else {
-                // カテゴリが存在しない場合、リセット
-                currentCategory = '';
-                categorySelect.value = '';
-                resetInputFields();
-                renderCalendar(currentDate); // カレンダーを再描画
-            }
-        }
-    })
+                // 現在のカテゴリが削除された場合、プルダウンの一番上のカテゴリを選択
+                if (currentCategory === id) {
+                    // カテゴリの一番上を選択する
+                    const firstOption = categorySelect.options[1]; // インデックス1が最初の有効なカテゴリ
+                    if (firstOption) {
+                        currentCategory = firstOption.value;
+                        categorySelect.value = currentCategory;
+                        loadDataForSelectedDate(); // 新しいカテゴリに基づくデータをロード
+                        renderCalendar(currentDate); // カレンダーを再描画
+                    } else {
+                        // カテゴリが存在しない場合、リセット
+                        currentCategory = '';
+                        categorySelect.value = '';
+                        resetInputFields();
+                        renderCalendar(currentDate); // カレンダーを再描画
+                    }
+                }
+            })
             .catch(error => {
                 console.error('カテゴリの削除に失敗しました:', error);
             });
     }
 
     // 入力フィールドのリセット関数
-function resetInputFields() {
-    profitInput.value = 0;
-    expenseInput.value = 0;
-    memoInput.value = '';
-    profitDetails = [];
-    expenseDetails = [];
-    updateProfitDetailsList();
-    updateExpenseDetailsList();
-    monthlyBalanceDiv.textContent = '月間損益: 0';
-}
+    function resetInputFields() {
+        profitInput.value = 0;
+        expenseInput.value = 0;
+        memoInput.value = '';
+        profitDetails = [];
+        expenseDetails = [];
+        updateProfitDetailsList();
+        updateExpenseDetailsList();
+        monthlyBalanceDiv.textContent = '月間損益: 0';
+    }
 
     // カテゴリ名を更新する関数
     function updateCategoryName(id, newName) {
@@ -585,6 +584,22 @@ function resetInputFields() {
             })
             .catch(error => {
                 console.error('カテゴリ名の更新に失敗しました:', error);
+            });
+    }
+
+    // カテゴリの通貨を更新する関数
+    function updateCategoryCurrency(id, newCurrency) {
+        fetch('http://localhost:3000/api/updateCategoryCurrency', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, currency: newCurrency })
+        })
+            .then(response => response.json())
+            .then(() => {
+                loadCategories();
+            })
+            .catch(error => {
+                console.error('カテゴリの通貨の更新に失敗しました:', error);
             });
     }
 
@@ -718,11 +733,11 @@ function resetInputFields() {
 
                                 const profitDiv = document.createElement('div');
                                 profitDiv.classList.add('profit');
-                                profitDiv.textContent = `利益: ${entry.profit}`;
+                                profitDiv.textContent = `利益: ${entry.profit} ${entry.currency}`;
 
                                 const expenseDiv = document.createElement('div');
                                 expenseDiv.classList.add('expense');
-                                expenseDiv.textContent = `支出: ${entry.expense}`;
+                                expenseDiv.textContent = `支出: ${entry.expense} ${entry.currency}`;
 
                                 cell.appendChild(profitDiv);
                                 cell.appendChild(expenseDiv);
@@ -772,9 +787,8 @@ function resetInputFields() {
 
         if (currentCategory === 'total') {
             // 現在のプルダウンのカテゴリを取得
-    const categories = Array.from(categorySelect.options)
-    .map(option => option.value)
-    .filter(value => value !== '' && value !== 'total'); // 無効なカテゴリと「合計」を除外
+            const categories = categoriesList.map(cat => cat.name);
+
             let totalGoal = 0;
             let promises = categories.map(category => {
                 return new Promise((resolve) => {
@@ -800,8 +814,8 @@ function resetInputFields() {
     function getGoalForCategory(category, year, month, callback) {
         fetch(`http://localhost:3000/api/getGoal?category=${encodeURIComponent(category)}&year=${year}&month=${month}`)
             .then(response => response.json())
-            .then(goalAmount => {
-                const parsedGoal = parseFloat(goalAmount) || 0;
+            .then(goalData => {
+                const parsedGoal = parseFloat(goalData.goal_amount) || 0;
                 callback(parsedGoal);
             })
             .catch(error => {
@@ -834,14 +848,23 @@ function resetInputFields() {
         loadDataForMonth(currentCategory, currentDate, (dataForMonth) => {
             let totalProfit = 0;
             let totalExpense = 0;
+            const categoryCurrency = categoryCurrencies[currentCategory];
 
             dataForMonth.forEach((entry) => {
-                totalProfit += parseFloat(entry.profit) || 0;
-                totalExpense += parseFloat(entry.expense) || 0;
+                let profit = parseFloat(entry.profit) || 0;
+                let expense = parseFloat(entry.expense) || 0;
+
+                if (entry.currency !== categoryCurrency) {
+                    profit = parseFloat(convertAmount(profit, entry.currency, categoryCurrency));
+                    expense = parseFloat(convertAmount(expense, entry.currency, categoryCurrency));
+                }
+
+                totalProfit += profit;
+                totalExpense += expense;
             });
 
             const balance = totalProfit - totalExpense;
-            monthlyBalanceDiv.textContent = `月間損益: ${balance} JPY`;
+            monthlyBalanceDiv.textContent = `月間損益: ${balance} ${categoryCurrency}`;
 
             if (balance >= 0) {
                 monthlyBalanceDiv.style.color = 'green';
@@ -914,8 +937,8 @@ function resetInputFields() {
             } else {
                 loadDataFromDatabase(currentCategory, selectedDate, (data) => {
                     if (data) {
-                        profitInput.value = data.profit || 0;
-                        expenseInput.value = data.expense || 0;
+                        profitInput.value = `${data.profit || 0} ${data.currency}`;
+                        expenseInput.value = `${data.expense || 0} ${data.currency}`;
                         memoInput.value = data.memo || "";
                         profitDetails = JSON.parse(data.profit_details || '[]');
                         expenseDetails = JSON.parse(data.expense_details || '[]');
@@ -936,6 +959,8 @@ function resetInputFields() {
 
                     const selectedDateText = dateObj.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
                     document.getElementById('memo-date').textContent = selectedDateText;
+
+                    updateDisplayedAmounts();
                 });
             }
         }
@@ -999,23 +1024,23 @@ function resetInputFields() {
     // 利益の合計を計算
     function updateTotalProfit() {
         const total = profitDetails.reduce((sum, detail) => sum + detail.amount, 0);
-        profitInput.value = total;
+        profitInput.value = `${total} ${categoryCurrencies[currentCategory] || 'JPY'}`;
     }
 
     // 支出の合計を計算
     function updateTotalExpense() {
         const total = expenseDetails.reduce((sum, detail) => sum + detail.amount, 0);
-        expenseInput.value = total;
+        expenseInput.value = `${total} ${categoryCurrencies[currentCategory] || 'JPY'}`;
     }
 
     // データベースにデータを保存する関数
-    function saveDataToDatabase(category, date, profit, expense, memo, profitDetails, expenseDetails, callback) {
+    function saveDataToDatabase(category, date, profit, expense, memo, profitDetails, expenseDetails, currency, callback) {
         fetch('http://localhost:3000/api/saveData', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ category, date, profit, expense, memo, profitDetails, expenseDetails })
+            body: JSON.stringify({ category, date, profit, expense, memo, profitDetails, expenseDetails, currency })
         })
         .then(response => response.json())
         .then(data => {
@@ -1045,13 +1070,13 @@ function resetInputFields() {
     }
 
     // 目標金額をデータベースに保存する関数
-    function saveGoalToDatabase(category, year, month, goalAmount, callback) {
+    function saveGoalToDatabase(category, year, month, goalAmount, currency, callback) {
         fetch('http://localhost:3000/api/saveGoal', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ category, year, month, goalAmount })
+            body: JSON.stringify({ category, year, month, goalAmount, currency })
         })
         .then(response => response.json())
         .then(data => {
@@ -1068,10 +1093,19 @@ function resetInputFields() {
         loadDataForMonth(currentCategory, currentDate, (dataForMonth) => {
             let totalProfit = 0;
             let totalExpense = 0;
+            const categoryCurrency = categoryCurrencies[currentCategory];
 
             dataForMonth.forEach((entry) => {
-                totalProfit += parseFloat(entry.profit) || 0;
-                totalExpense += parseFloat(entry.expense) || 0;
+                let profit = parseFloat(entry.profit) || 0;
+                let expense = parseFloat(entry.expense) || 0;
+
+                if (entry.currency !== categoryCurrency) {
+                    profit = parseFloat(convertAmount(profit, entry.currency, categoryCurrency));
+                    expense = parseFloat(convertAmount(expense, entry.currency, categoryCurrency));
+                }
+
+                totalProfit += profit;
+                totalExpense += expense;
             });
 
             const balance = totalProfit - totalExpense;
@@ -1095,11 +1129,7 @@ function resetInputFields() {
         let dateCount = 1;
         let rowCount = Math.ceil((firstDay + daysInMonth) / 7);
 
-        //const categories = ['web3', 'blog', 'part-time', 'food', 'social', 'taxes', 'business', 'leisure'];
-        // 現在のプルダウンのカテゴリを取得
-    const categories = Array.from(categorySelect.options)
-    .map(option => option.value)
-    .filter(value => value !== '' && value !== 'total'); // 無効なカテゴリと「合計」を除外
+        const categories = categoriesList.map(cat => cat.name);
 
         let promises = [];
 
@@ -1115,6 +1145,7 @@ function resetInputFields() {
             const dataMap = {};
 
             results.forEach(({ category, data }) => {
+                const categoryCurrency = categoryCurrencies[category];
                 data.forEach((entry) => {
                     const dateObj = new Date(entry.date);
                     const formattedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
@@ -1123,8 +1154,16 @@ function resetInputFields() {
                         dataMap[formattedDate] = { profit: 0, expense: 0 };
                     }
 
-                    dataMap[formattedDate].profit += parseFloat(entry.profit) || 0;
-                    dataMap[formattedDate].expense += parseFloat(entry.expense) || 0;
+                    let profit = parseFloat(entry.profit) || 0;
+                    let expense = parseFloat(entry.expense) || 0;
+
+                    if (categoryCurrency !== 'JPY') {
+                        profit = parseFloat(convertAmount(profit, categoryCurrency, 'JPY'));
+                        expense = parseFloat(convertAmount(expense, categoryCurrency, 'JPY'));
+                    }
+
+                    dataMap[formattedDate].profit += profit;
+                    dataMap[formattedDate].expense += expense;
                 });
             });
 
@@ -1156,11 +1195,11 @@ function resetInputFields() {
 
                                 const profitDiv = document.createElement('div');
                                 profitDiv.classList.add('profit');
-                                profitDiv.textContent = `利益: ${entry.profit}`;
+                                profitDiv.textContent = `利益: ${entry.profit} JPY`;
 
                                 const expenseDiv = document.createElement('div');
                                 expenseDiv.classList.add('expense');
-                                expenseDiv.textContent = `支出: ${entry.expense}`;
+                                expenseDiv.textContent = `支出: ${entry.expense} JPY`;
 
                                 cell.appendChild(profitDiv);
                                 cell.appendChild(expenseDiv);
@@ -1203,16 +1242,18 @@ function resetInputFields() {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
 
-        // 現在のプルダウンのカテゴリを取得
-    const categories = Array.from(categorySelect.options)
-    .map(option => option.value)
-    .filter(value => value !== '' && value !== 'total'); // 無効なカテゴリと「合計」を除外
+        const categories = categoriesList.map(cat => cat.name);
+
         let totalGoal = 0;
         let totalBalance = 0;
 
         let goalPromises = categories.map(category => {
             return new Promise((resolve) => {
                 getGoalForCategory(category, year, month, (goalAmount) => {
+                    let categoryCurrency = categoryCurrencies[category];
+                    if (categoryCurrency !== 'JPY') {
+                        goalAmount = parseFloat(convertAmount(goalAmount, categoryCurrency, 'JPY'));
+                    }
                     totalGoal += parseFloat(goalAmount) || 0;
                     resolve();
                 });
@@ -1224,9 +1265,16 @@ function resetInputFields() {
                 loadDataForMonth(category, currentDate, (dataForMonth) => {
                     let categoryProfit = 0;
                     let categoryExpense = 0;
+                    const categoryCurrency = categoryCurrencies[category];
                     dataForMonth.forEach((entry) => {
-                        categoryProfit += parseFloat(entry.profit) || 0;
-                        categoryExpense += parseFloat(entry.expense) || 0;
+                        let profit = parseFloat(entry.profit) || 0;
+                        let expense = parseFloat(entry.expense) || 0;
+                        if (entry.currency !== 'JPY') {
+                            profit = parseFloat(convertAmount(profit, entry.currency, 'JPY'));
+                            expense = parseFloat(convertAmount(expense, entry.currency, 'JPY'));
+                        }
+                        categoryProfit += profit;
+                        categoryExpense += expense;
                     });
                     totalBalance += categoryProfit - categoryExpense;
                     resolve();
@@ -1275,7 +1323,7 @@ function resetInputFields() {
                 }
             });
 
-            goalDisplay.textContent = `現在の合計目標金額: ${totalGoal}`;
+            goalDisplay.textContent = `現在の合計目標金額: ${totalGoal} JPY`;
         });
     }
 

@@ -1,18 +1,14 @@
-//const axios = require('axios');
-
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const { spawn } = require('child_process');
-const path = require('path'); // pathモジュールを追加
+const path = require('path');
 const app = express();
 
 app.use(express.json());
 app.use(cors()); // 全てのオリジンからのリクエストを許可
 
 (async () => {
-
-    const axios = require('axios'); // ここに移動
 
     // 接続プールを作成
     const pool = mysql.createPool({
@@ -28,46 +24,45 @@ app.use(cors()); // 全てのオリジンからのリクエストを許可
 
     console.log('MySQLデータベースに接続しました！');
 
-     // Pythonスクリプトのパスを設定
-     // Node.jsサーバーの一部
-app.get('/api/usd-jpy', (req, res) => {
-    const pythonProcess = spawn('python3', ['fetch_exchange_rate.py']);
+    // 為替レートを取得するAPIエンドポイント
+    app.get('/api/usd-jpy', (req, res) => {
+        const pythonProcess = spawn('python3', ['fetch_exchange_rate.py']);
 
-    let rateData = '';
-    let errorData = '';
+        let rateData = '';
+        let errorData = '';
 
-    pythonProcess.stdout.on('data', (data) => {
-        rateData += data.toString();
-        console.log('Pythonスクリプトの出力:', data.toString()); // デバッグ用
-    });
+        pythonProcess.stdout.on('data', (data) => {
+            rateData += data.toString();
+            console.log('Pythonスクリプトの出力:', data.toString()); // デバッグ用
+        });
 
-    pythonProcess.stderr.on('data', (data) => {
-        errorData += data.toString();
-        console.error('Pythonスクリプトからのエラー:', data.toString());
-    });
+        pythonProcess.stderr.on('data', (data) => {
+            errorData += data.toString();
+            console.error('Pythonスクリプトからのエラー:', data.toString());
+        });
 
-    pythonProcess.on('close', (code) => {
-        if (code !== 0 || !rateData) {
-            console.error('Pythonスクリプトが異常終了しました。コード:', code);
-            res.status(500).json({ error: '為替レートの取得に失敗しました。', details: errorData });
-        } else {
-            const rate = parseFloat(rateData.trim());
-            if (isNaN(rate)) {
-                res.status(500).json({ error: '為替レートの解析に失敗しました。' });
+        pythonProcess.on('close', (code) => {
+            if (code !== 0 || !rateData) {
+                console.error('Pythonスクリプトが異常終了しました。コード:', code);
+                res.status(500).json({ error: '為替レートの取得に失敗しました。', details: errorData });
             } else {
-                res.json({ rate });
+                const rate = parseFloat(rateData.trim());
+                if (isNaN(rate)) {
+                    res.status(500).json({ error: '為替レートの解析に失敗しました。' });
+                } else {
+                    res.json({ rate });
+                }
             }
-        }
+        });
     });
-});
 
     // データを保存するAPI
     app.post('/api/saveData', async (req, res) => {
-        const { category, date, profit, expense, memo, profitDetails, expenseDetails } = req.body;
-        const query = 'INSERT INTO calendar_data (date, category, profit, expense, memo, profit_details, expense_details) VALUES (?, ?, ?, ?, ?, ?, ?) ' +
-                      'ON DUPLICATE KEY UPDATE profit = VALUES(profit), expense = VALUES(expense), memo = VALUES(memo), profit_details = VALUES(profit_details), expense_details = VALUES(expense_details)';
+        const { category, date, profit, expense, memo, profitDetails, expenseDetails, currency } = req.body;
+        const query = 'INSERT INTO calendar_data (date, category, profit, expense, memo, profit_details, expense_details, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ' +
+                      'ON DUPLICATE KEY UPDATE profit = VALUES(profit), expense = VALUES(expense), memo = VALUES(memo), profit_details = VALUES(profit_details), expense_details = VALUES(expense_details), currency = VALUES(currency)';
         try {
-            await pool.execute(query, [date, category, profit, expense, memo, profitDetails, expenseDetails]);
+            await pool.execute(query, [date, category, profit, expense, memo, profitDetails, expenseDetails, currency]);
             res.json({ message: 'データが保存されました' });
         } catch (err) {
             console.error('データの保存に失敗しました:', err);
@@ -118,11 +113,11 @@ app.get('/api/usd-jpy', (req, res) => {
 
     // 目標金額を保存するAPI
     app.post('/api/saveGoal', async (req, res) => {
-        const { category, year, month, goalAmount } = req.body;
-        const query = 'INSERT INTO monthly_goals (category, year, month, goal_amount) VALUES (?, ?, ?, ?) ' +
-                      'ON DUPLICATE KEY UPDATE goal_amount = VALUES(goal_amount)';
+        const { category, year, month, goalAmount, currency } = req.body;
+        const query = 'INSERT INTO monthly_goals (category, year, month, goal_amount, currency) VALUES (?, ?, ?, ?, ?) ' +
+                      'ON DUPLICATE KEY UPDATE goal_amount = VALUES(goal_amount), currency = VALUES(currency)';
         try {
-            await pool.execute(query, [category, year, month, goalAmount]);
+            await pool.execute(query, [category, year, month, goalAmount, currency]);
             res.json({ message: '目標金額が保存されました' });
         } catch (err) {
             console.error('目標金額の保存に失敗しました:', err);
@@ -133,10 +128,10 @@ app.get('/api/usd-jpy', (req, res) => {
     // 目標金額を取得するAPI
     app.get('/api/getGoal', async (req, res) => {
         const { category, year, month } = req.query;
-        const query = 'SELECT goal_amount FROM monthly_goals WHERE category = ? AND year = ? AND month = ?';
+        const query = 'SELECT goal_amount, currency FROM monthly_goals WHERE category = ? AND year = ? AND month = ?';
         try {
             const [results] = await pool.execute(query, [category, year, month]);
-            res.json(results[0]?.goal_amount || 0);
+            res.json(results[0] || null);
         } catch (err) {
             console.error('目標金額の取得に失敗しました:', err);
             res.status(500).json({ error: '目標金額の取得に失敗しました' });
@@ -229,6 +224,19 @@ app.get('/api/usd-jpy', (req, res) => {
         }
     });
 
+    // カテゴリの通貨を更新するAPI
+    app.post('/api/updateCategoryCurrency', async (req, res) => {
+        const { id, currency } = req.body;
+        const query = 'UPDATE categories SET currency = ? WHERE id = ?';
+        try {
+            await pool.execute(query, [currency, id]);
+            res.json({ message: 'カテゴリの通貨が更新されました' });
+        } catch (err) {
+            console.error('カテゴリの通貨の更新に失敗しました:', err);
+            res.status(500).json({ error: 'カテゴリの通貨の更新に失敗しました' });
+        }
+    });
+
     // カテゴリの順番を更新するAPI
     app.post('/api/updateCategoryOrder', async (req, res) => {
         const categories = req.body.categories; // [{id: 1, position: 1}, ...]
@@ -254,15 +262,15 @@ app.get('/api/usd-jpy', (req, res) => {
 
     // 新しいカテゴリを追加するAPI
     app.post('/api/addCategory', async (req, res) => {
-        const { name } = req.body;
+        const { name, currency } = req.body;
         const getMaxPositionQuery = 'SELECT MAX(position) as maxPosition FROM categories';
         try {
             const [results] = await pool.execute(getMaxPositionQuery);
             const maxPosition = results[0].maxPosition || 0;
             const newPosition = maxPosition + 1;
 
-            const insertQuery = 'INSERT INTO categories (name, position) VALUES (?, ?)';
-            await pool.execute(insertQuery, [name, newPosition]);
+            const insertQuery = 'INSERT INTO categories (name, position, currency) VALUES (?, ?, ?)';
+            await pool.execute(insertQuery, [name, newPosition, currency]);
 
             res.json({ message: '新しいカテゴリが追加されました' });
         } catch (err) {
