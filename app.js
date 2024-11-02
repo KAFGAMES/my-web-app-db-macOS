@@ -10,7 +10,7 @@ let expenseDetails = [];
 let categoriesList = [];
 let categoryCurrencies = {}; // カテゴリごとの通貨設定を保持
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // DOM要素の取得
 
     const calendarBody = document.getElementById('calendar-body');
@@ -55,7 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error fetching exchange rate:', error);
         }
     }
-    fetchExchangeRate(); // Initial fetch
+    await fetchExchangeRate(); // 為替レートを取得してから次の処理へ
+
+
 
     // Initial display of JPY in input fields and balance
     updateDisplayedAmounts();
@@ -588,20 +590,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // カテゴリの通貨を更新する関数
-    function updateCategoryCurrency(id, newCurrency) {
-        fetch('http://localhost:3000/api/updateCategoryCurrency', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, currency: newCurrency })
-        })
-            .then(response => response.json())
-            .then(() => {
-                loadCategories();
-            })
-            .catch(error => {
-                console.error('カテゴリの通貨の更新に失敗しました:', error);
-            });
-    }
+function updateCategoryCurrency(id, newCurrency) {
+    fetch('http://localhost:3000/api/updateCategoryCurrency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, currency: newCurrency })
+    })
+    .then(response => response.json())
+    .then(() => {
+        // カテゴリの通貨を更新後、再度カテゴリ情報をロード
+        loadCategories();
+
+        // カレンダーを再描画
+        if (currentCategory === 'total') {
+            renderCalendarWithTotal();
+            calculateTotalGoalAndUpdateChart();
+        } else {
+            renderCalendar(currentDate);
+            calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
+        }
+
+        // 選択されている日付のデータを再度ロード
+        loadDataForSelectedDate();
+
+        // 表示されている金額を更新
+        updateDisplayedAmounts();
+
+    })
+    .catch(error => {
+        console.error('カテゴリの通貨の更新に失敗しました:', error);
+    });
+}
+
 
     // カテゴリの順番を変更する関数
     function moveCategoryPosition(categories, id, direction) {
@@ -1117,6 +1137,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderCalendarWithTotal() {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
+        const totalCurrency = 'JPY';  // 基準通貨をJPYとする
         const today = new Date();
         const todayDateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -1157,9 +1178,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     let profit = parseFloat(entry.profit) || 0;
                     let expense = parseFloat(entry.expense) || 0;
 
-                    if (categoryCurrency !== 'JPY') {
-                        profit = parseFloat(convertAmount(profit, categoryCurrency, 'JPY'));
-                        expense = parseFloat(convertAmount(expense, categoryCurrency, 'JPY'));
+                    if (entry.currency !== totalCurrency) {
+                        profit = parseFloat(convertAmount(profit, entry.currency, totalCurrency));
+                        expense = parseFloat(convertAmount(expense, entry.currency, totalCurrency));
                     }
 
                     dataMap[formattedDate].profit += profit;
