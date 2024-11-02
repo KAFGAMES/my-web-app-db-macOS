@@ -129,10 +129,15 @@ body {
 }
 
 .menu-right {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    /* position: absolute; 削除 */
+    /* top: 10px; 削除 */
+    /* right: 10px; 削除 */
+    align-items: center;
+    display: flex;
+    gap: 10px; /* タブの間に適度なスペースを追加 */
+    margin-left: auto; /* 右側に配置 */
 }
+
 
 #category-select {
     padding: 5px;
@@ -336,21 +341,75 @@ body {
     border-radius: 5px;
 }
 
-.menu-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 10px;
-    height: 40px;
-}
-
 .menu-bar div:first-child {
     color: white;
     font-weight: bold;
     margin-right: auto;
 }
 
+.menu-bar h1 {
+    color: white;
+    font-weight: bold;
+    margin: 0;
+    /* 必要に応じて余白を調整 */
+    white-space: nowrap;
+}
+
 #usd-jpy-rate {
-    margin-right: auto;
+    /*margin-right: auto;
+    padding-left: 10px;*/
     padding-left: 10px;
+    margin-left: 20px; /* 必要に応じて調整 */
+    white-space: nowrap;
+}
+
+body.preload {
+    visibility: hidden;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    overflow: auto;
+    white-space: nowrap;
+}
+
+.navbar-item {
+    margin-right: 5px; /* 必要に応じて調整 */
+}
+
+.navbar, .header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    overflow: auto;
+}
+
+.menu-right select,
+.menu-right button {
+    padding: 3px 5px;
+    font-size: 12px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .menu-bar {
+        flex-wrap: wrap;
+        height: auto;
+    }
+
+    .menu-right {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .menu-right select,
+    .menu-right button {
+        margin-top: 5px;
+    }
+
+    .menu-bar h1 {
+        margin-bottom: 5px;
+    }
 }

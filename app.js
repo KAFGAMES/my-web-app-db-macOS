@@ -11,6 +11,16 @@ let categoriesList = [];
 let categoryCurrencies = {}; // カテゴリごとの通貨設定を保持
 
 document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // 初期化関数の呼び出し
+        await initializeDisplay(); // 為替レートの取得と表示の初期化
+        loadCategories(); // カテゴリの読み込み
+        renderCalendar(currentDate); // カレンダーの初期表示
+        selectToday(); // 今日の日付の選択
+        displayGoalAmount(); // 目標金額の表示
+    } catch (error) {
+        console.error("初期化中にエラーが発生しました:", error);
+    }
     // DOM要素の取得
 
     const calendarBody = document.getElementById('calendar-body');
@@ -27,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Initial setup for displaying JPY in the input fields and balance
     profitInput.value = `${profitInput.value || 0} JPY`;
     expenseInput.value = `${expenseInput.value || 0} JPY`;
-    monthlyBalanceDiv.textContent = `月間損益: ${monthlyBalanceDiv.textContent || 0} JPY`;
+    //monthlyBalanceDiv.textContent = `月間損益: ${monthlyBalanceDiv.textContent || 0} JPY`;
 
     const goalInput = document.getElementById('goal-input');
     const goalSaveButton = document.getElementById('goal-save-btn');
@@ -44,6 +54,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const expenseDetailModal = document.getElementById('expense-detail-modal');
     const categorySelect = document.getElementById('category-select');
 
+    
+
     // Fetch the currency exchange rate (assuming it's already obtained once daily and available in `usdToJpyRate`)
     let usdToJpyRate = 0; // Placeholder, to be set from fetched data
     async function fetchExchangeRate() {
@@ -51,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const response = await fetch('http://localhost:3000/api/usd-jpy');
             const data = await response.json();
             usdToJpyRate = data.rate || 1; // Default to 1 if the rate is not available
+            //updateDisplayedAmounts(); // 為替レート取得後に初期表示を設定
         } catch (error) {
             console.error('Error fetching exchange rate:', error);
         }
@@ -107,6 +120,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('為替レートの取得中にエラーが発生しました:', error);
         }
     }
+
+    // `preload`クラスを削除してページを表示
+    document.body.classList.remove('preload');
 
     // 10秒ごとに為替レートを更新
     // setInterval(fetchUsdJpyRate, 10000);
@@ -500,7 +516,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updateCurrentCategory();
 
                 // 最初のカテゴリを自動選択
-                if (categories.length > 0) {
+                // 現在のカテゴリを維持または設定
+                if (currentCategory && categories.some(cat => cat.name === currentCategory)) {
+                  // currentCategory が有効な場合、そのまま維持
+                 categorySelect.value = currentCategory;
+                } else　if (categories.length > 0) {
                     currentCategory = categories[0].name;
                     categorySelect.value = currentCategory;
 
@@ -1132,6 +1152,17 @@ function updateCategoryCurrency(id, newCurrency) {
             callback(balance);
         });
     }
+
+  // 初期化関数
+async function initializeDisplay() {
+    // 一時的に空に設定して初期表示を防止
+    profitInput.value = '';
+    expenseInput.value = '';
+    monthlyBalanceDiv.textContent = '';
+
+    await fetchExchangeRate(); // 為替レート取得
+    updateDisplayedAmounts(); // 表示更新
+}
 
     // 合計カテゴリの場合のカレンダーを描画する関数
     function renderCalendarWithTotal() {
