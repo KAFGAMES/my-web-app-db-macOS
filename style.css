@@ -126,6 +126,8 @@ body {
     padding: 5px 10px; /* 上下のパディングを小さくする */
     height: 40px; /* 高さを40pxに設定 */
     font-size: 14px; /* フォントサイズを小さくする */
+    overflow: hidden; /* 横にはみ出す要素を隠す */
+    flex-wrap: nowrap; /* 要素を1行に収める */
 }
 
 .menu-right {
@@ -136,6 +138,8 @@ body {
     display: flex;
     gap: 10px; /* タブの間に適度なスペースを追加 */
     margin-left: auto; /* 右側に配置 */
+    overflow: hidden; /* 横にはみ出す要素を隠す */
+    flex-wrap: nowrap; /* 要素を1行に収める */
 }
 
 
@@ -412,4 +416,37 @@ body.preload {
     .menu-bar h1 {
         margin-bottom: 5px;
     }
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* 水平方向のはみ出しを防ぐ */
+}
+
+#memo-menu-btn {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+    min-width: 60px;
+    padding: 5px 10px;
+    font-size: 14px;
+    margin-right: 20px; /* 適切な余白を指定 */
+}
+
+@media (max-width: 768px) {
+    #memo-menu-btn {
+        font-size: 12px;
+        padding: 3px 8px;
+    }
+}
+
+.menu-right button, 
+#category-select {
+    height: 40px; /* 他のボタンと同じ高さに設定 */
+    min-width: 100px; /* 必要に応じて幅を調整 */
+    font-size: 14px; /* フォントサイズも統一 */
 }
