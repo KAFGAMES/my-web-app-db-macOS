@@ -356,6 +356,32 @@ app.post('/api/deleteAsset', async (req, res) => {
     }
 });
 
+app.post('/api/saveAssetAmount', async (req, res) => {
+    const { id, amount } = req.body;
+    const query = 'UPDATE assets SET current_balance = ? WHERE id = ?';
+    try {
+        await pool.execute(query, [amount, id]);
+        res.json({ message: '資産金額が保存されました' });
+    } catch (error) {
+        console.error('資産金額の保存に失敗しました:', error);
+        res.status(500).json({ error: '資産金額の保存に失敗しました' });
+    }
+});
+
+app.get('/api/getAssets', async (req, res) => {
+    const query = 'SELECT id, name, currency, initial_balance, current_balance, created_at FROM assets ORDER BY name';
+    try {
+        const [results] = await pool.execute(query);
+        res.json(results);
+    } catch (err) {
+        console.error('資産の取得に失敗しました:', err);
+        res.status(500).json({ error: '資産の取得に失敗しました' });
+    }
+});
+
+
+
+
 
     // サーバーの起動
     app.listen(3000, () => {

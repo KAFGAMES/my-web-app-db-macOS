@@ -164,6 +164,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
+    // カテゴリ管理ページを開くボタンのイベントリスナー
+document.getElementById('category-management-btn').addEventListener('click', () => {
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('memo-page').style.display = 'none';
+    document.getElementById('asset-management-page').style.display = 'none'; // 資産管理ページを非表示
+    document.getElementById('category-management-page').style.display = 'block'; // カテゴリ管理ページを表示
+});
+
+// 資産管理ページを開くボタンのイベントリスナー
+document.getElementById('asset-management-btn').addEventListener('click', () => {
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('memo-page').style.display = 'none';
+    document.getElementById('category-management-page').style.display = 'none'; // カテゴリ管理ページを非表示
+    document.getElementById('asset-management-page').style.display = 'block'; // 資産管理ページを表示
+});
+
+
     // モーダルの開閉
     function openModal(modal) {
         modal.style.display = 'block';
@@ -723,10 +740,32 @@ function loadAssets() {
                 nameSpan.textContent = asset.name;
                 assetDiv.appendChild(nameSpan);
 
+                // 通貨表示
+                const currencySpanEnd = document.createElement('span');
+                currencySpanEnd.textContent = ` (${asset.currency})`;
+                assetDiv.appendChild(currencySpanEnd);
+
+                // 資産金額の入力フィールド
+                const amountInput = document.createElement('input');
+                amountInput.type = 'number'; // 数値のみを扱う
+                amountInput.placeholder = '資産金額を入力';
+                amountInput.value = asset.current_balance || 0; // 数値のみを設定
+                assetDiv.appendChild(amountInput);
+
+                // 通貨コードを表示
                 const currencySpan = document.createElement('span');
-                currencySpan.textContent = ` (${asset.currency})`;
+                currencySpan.textContent = ` ${asset.currency}`; // 通貨コードを表示
                 assetDiv.appendChild(currencySpan);
 
+                // 保存ボタン
+                const saveButton = document.createElement('button');
+                saveButton.textContent = '保存';
+                saveButton.addEventListener('click', () => {
+                    saveAssetAmount(asset.id, parseFloat(amountInput.value));
+                });
+                assetDiv.appendChild(saveButton);
+
+                // 通貨変更ボタン
                 const currencyButton = document.createElement('button');
                 currencyButton.textContent = '通貨変更';
                 currencyButton.addEventListener('click', () => {
@@ -735,6 +774,7 @@ function loadAssets() {
                 });
                 assetDiv.appendChild(currencyButton);
 
+                // 名前変更ボタン
                 const editButton = document.createElement('button');
                 editButton.textContent = '名前変更';
                 editButton.addEventListener('click', () => {
@@ -745,6 +785,7 @@ function loadAssets() {
                 });
                 assetDiv.appendChild(editButton);
 
+                // 削除ボタン
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = '削除';
                 deleteButton.addEventListener('click', () => {
@@ -761,6 +802,27 @@ function loadAssets() {
             console.error('資産のロードに失敗しました:', error);
         });
 }
+
+// 資産金額を保存する関数
+function saveAssetAmount(assetId, amount) {
+    fetch('http://localhost:3000/api/saveAssetAmount', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: assetId, amount: amount }),
+    })
+    .then(response => response.json())
+    .then(() => {
+        alert('資産金額が保存されました');
+        loadAssets(); // 更新後に資産リストを再読み込み
+    })
+    .catch(error => {
+        console.error('資産金額の保存に失敗しました:', error);
+        alert('資産金額の保存に失敗しました');
+    });
+}
+
 
 // 資産の通貨を更新する関数
 function updateAssetCurrency(id, newCurrency) {
@@ -829,6 +891,31 @@ document.getElementById('add-asset-btn').addEventListener('click', () => {
         });
     }
 });
+
+document.getElementById('save-asset-amount-btn').addEventListener('click', async () => {
+    const assetAmount = parseFloat(document.getElementById('asset-amount-input').value);
+    if (isNaN(assetAmount)) {
+        alert('有効な資産金額を入力してください');
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:3000/api/saveAssetAmount', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ amount: assetAmount }),
+        });
+        const result = await response.json();
+        alert('資産金額が保存されました');
+        loadAssets(); // 最新の資産情報を再読み込み
+    } catch (error) {
+        console.error('資産金額の保存に失敗しました:', error);
+        alert('資産金額の保存に失敗しました');
+    }
+});
+
 
 
 
