@@ -180,6 +180,15 @@ document.getElementById('asset-management-btn').addEventListener('click', () => 
     document.getElementById('asset-management-page').style.display = 'block'; // 資産管理ページを表示
 });
 
+// メモページを開くボタンのイベントリスナー
+document.getElementById('memo-menu-btn').addEventListener('click', () => {
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('category-management-page').style.display = 'none';
+    document.getElementById('asset-management-page').style.display = 'none';
+    document.getElementById('memo-page').style.display = 'block'; // メモページを表示
+});
+
+
 
     // モーダルの開閉
     function openModal(modal) {
@@ -717,11 +726,33 @@ document.getElementById('asset-management-back-btn').addEventListener('click', (
 });
 
 // 資産管理ページの表示関数
-function showAssetManagementPage() {
+async function showAssetManagementPage() {
     document.getElementById('main-content').style.display = 'none';
     document.getElementById('memo-page').style.display = 'none';
     document.getElementById('asset-management-page').style.display = 'block';
-    loadAssets();
+    await loadAssets();
+    displayTotalAssetsInJPY(); // 合計金額を表示する関数を呼び出し
+}
+
+// 合計金額を計算して表示する関数
+function displayTotalAssetsInJPY() {
+    const assetListDiv = document.getElementById('asset-list');
+    const assetItems = assetListDiv.querySelectorAll('.asset-item');
+    let totalJPY = 0;
+
+    assetItems.forEach(asset => {
+        const amount = parseFloat(asset.querySelector('input').value) || 0;
+        const currency = asset.querySelector('span').textContent.trim();
+
+        if (currency.includes("USD")) {
+            totalJPY += convertAmount(amount, 'USD', 'JPY');
+        } else {
+            totalJPY += amount;
+        }
+    });
+
+    const totalDisplay = document.getElementById('asset-total-display');
+    totalDisplay.textContent = `合計: ${totalJPY.toFixed(2)} JPY`;
 }
 
 // 資産をロードする関数
@@ -731,6 +762,8 @@ function loadAssets() {
         .then(assets => {
             const assetListDiv = document.getElementById('asset-list');
             assetListDiv.innerHTML = '';
+
+            let totalAmountJPY = 0;
 
             assets.forEach(asset => {
                 const assetDiv = document.createElement('div');
@@ -795,12 +828,28 @@ function loadAssets() {
                 });
                 assetDiv.appendChild(deleteButton);
 
+                // 通貨変換してJPYで合計計算
+        const amount = parseFloat(amountInput.value);
+        const amountInJPY = parseFloat(asset.currency === 'USD' ? convertAmount(amount, 'USD', 'JPY') : amount);
+        totalAmountJPY += amountInJPY;
+
                 assetListDiv.appendChild(assetDiv);
             });
+
+             // 合計金額を表示する要素を更新
+    const totalDisplay = document.getElementById('asset-total-display') || document.createElement('div');
+    totalDisplay.id = 'asset-total-display';
+    totalDisplay.classList.add('asset-total');
+    totalDisplay.textContent = `合計: ${totalAmountJPY.toLocaleString()} JPY`;
+
+    assetListDiv.appendChild(totalDisplay);
+
         })
         .catch(error => {
             console.error('資産のロードに失敗しました:', error);
         });
+
+       
 }
 
 // 資産金額を保存する関数

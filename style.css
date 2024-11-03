@@ -480,3 +480,10 @@ html, body {
     border-radius: 4px;
     background-color: #f4f4f4;
 }
+
+#asset-total-display {
+    font-weight: bold;
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 20px;
+}
