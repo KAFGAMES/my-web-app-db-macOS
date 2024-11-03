@@ -292,6 +292,71 @@ app.use(cors()); // 全てのオリジンからのリクエストを許可
         }
     });
 
+    // 資産を取得するAPI
+app.get('/api/getAssets', async (req, res) => {
+    const query = 'SELECT * FROM assets ORDER BY name';
+    try {
+        const [results] = await pool.execute(query);
+        res.json(results);
+    } catch (err) {
+        console.error('資産の取得に失敗しました:', err);
+        res.status(500).json({ error: '資産の取得に失敗しました' });
+    }
+});
+
+// 新しい資産を追加するAPI
+app.post('/api/addAsset', async (req, res) => {
+    const { name, currency } = req.body;
+    const query = 'INSERT INTO assets (name, currency) VALUES (?, ?)';
+    try {
+        await pool.execute(query, [name, currency]);
+        res.json({ message: '新しい資産が追加されました' });
+    } catch (err) {
+        console.error('資産の追加に失敗しました:', err);
+        res.status(500).json({ error: '資産の追加に失敗しました' });
+    }
+});
+
+// 資産名を更新するAPI
+app.post('/api/updateAssetName', async (req, res) => {
+    const { id, name } = req.body;
+    const query = 'UPDATE assets SET name = ? WHERE id = ?';
+    try {
+        await pool.execute(query, [name, id]);
+        res.json({ message: '資産名が更新されました' });
+    } catch (err) {
+        console.error('資産名の更新に失敗しました:', err);
+        res.status(500).json({ error: '資産名の更新に失敗しました' });
+    }
+});
+
+// 資産の通貨を更新するAPI
+app.post('/api/updateAssetCurrency', async (req, res) => {
+    const { id, currency } = req.body;
+    const query = 'UPDATE assets SET currency = ? WHERE id = ?';
+    try {
+        await pool.execute(query, [currency, id]);
+        res.json({ message: '資産の通貨が更新されました' });
+    } catch (err) {
+        console.error('資産の通貨の更新に失敗しました:', err);
+        res.status(500).json({ error: '資産の通貨の更新に失敗しました' });
+    }
+});
+
+// 資産を削除するAPI
+app.post('/api/deleteAsset', async (req, res) => {
+    const { id } = req.body;
+    const query = 'DELETE FROM assets WHERE id = ?';
+    try {
+        await pool.execute(query, [id]);
+        res.json({ message: '資産が削除されました' });
+    } catch (err) {
+        console.error('資産の削除に失敗しました:', err);
+        res.status(500).json({ error: '資産の削除に失敗しました' });
+    }
+});
+
+
     // サーバーの起動
     app.listen(3000, () => {
         console.log('サーバーがポート3000で起動しました');

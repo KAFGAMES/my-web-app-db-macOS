@@ -690,6 +690,149 @@ function updateCategoryCurrency(id, newCurrency) {
         loadCategories();
     }
 
+// 資産管理ページを開くボタンのイベントリスナー
+document.getElementById('asset-management-btn').addEventListener('click', showAssetManagementPage);
+
+// 資産管理ページの戻るボタンのイベントリスナー
+document.getElementById('asset-management-back-btn').addEventListener('click', () => {
+    document.getElementById('asset-management-page').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+});
+
+// 資産管理ページの表示関数
+function showAssetManagementPage() {
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('memo-page').style.display = 'none';
+    document.getElementById('asset-management-page').style.display = 'block';
+    loadAssets();
+}
+
+// 資産をロードする関数
+function loadAssets() {
+    fetch('http://localhost:3000/api/getAssets')
+        .then(response => response.json())
+        .then(assets => {
+            const assetListDiv = document.getElementById('asset-list');
+            assetListDiv.innerHTML = '';
+
+            assets.forEach(asset => {
+                const assetDiv = document.createElement('div');
+                assetDiv.classList.add('asset-item');
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = asset.name;
+                assetDiv.appendChild(nameSpan);
+
+                const currencySpan = document.createElement('span');
+                currencySpan.textContent = ` (${asset.currency})`;
+                assetDiv.appendChild(currencySpan);
+
+                const currencyButton = document.createElement('button');
+                currencyButton.textContent = '通貨変更';
+                currencyButton.addEventListener('click', () => {
+                    const newCurrency = asset.currency === 'JPY' ? 'USD' : 'JPY';
+                    updateAssetCurrency(asset.id, newCurrency);
+                });
+                assetDiv.appendChild(currencyButton);
+
+                const editButton = document.createElement('button');
+                editButton.textContent = '名前変更';
+                editButton.addEventListener('click', () => {
+                    const newName = prompt(`新しい資産名を入力してください:`, asset.name);
+                    if (newName) {
+                        updateAssetName(asset.id, newName);
+                    }
+                });
+                assetDiv.appendChild(editButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '削除';
+                deleteButton.addEventListener('click', () => {
+                    if (confirm(`資産「${asset.name}」を削除してよろしいですか？`)) {
+                        deleteAsset(asset.id);
+                    }
+                });
+                assetDiv.appendChild(deleteButton);
+
+                assetListDiv.appendChild(assetDiv);
+            });
+        })
+        .catch(error => {
+            console.error('資産のロードに失敗しました:', error);
+        });
+}
+
+// 資産の通貨を更新する関数
+function updateAssetCurrency(id, newCurrency) {
+    fetch('http://localhost:3000/api/updateAssetCurrency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, currency: newCurrency })
+    })
+    .then(response => response.json())
+    .then(() => {
+        loadAssets();
+    })
+    .catch(error => {
+        console.error('資産の通貨の更新に失敗しました:', error);
+    });
+}
+
+// 資産の名前を更新する関数
+function updateAssetName(id, newName) {
+    fetch('http://localhost:3000/api/updateAssetName', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name: newName })
+    })
+    .then(response => response.json())
+    .then(() => {
+        loadAssets();
+    })
+    .catch(error => {
+        console.error('資産名の更新に失敗しました:', error);
+    });
+}
+
+// 資産を削除する関数
+function deleteAsset(id) {
+    fetch('http://localhost:3000/api/deleteAsset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    })
+    .then(response => response.json())
+    .then(() => {
+        loadAssets();
+    })
+    .catch(error => {
+        console.error('資産の削除に失敗しました:', error);
+    });
+}
+
+// 新しい資産を追加するボタンのイベントリスナー
+document.getElementById('add-asset-btn').addEventListener('click', () => {
+    const newAssetName = prompt('新しい資産名を入力してください:');
+    if (newAssetName) {
+        const currency = confirm('この資産はドルで管理しますか？\n「OK」をクリックするとドル、「キャンセル」をクリックすると円になります。') ? 'USD' : 'JPY';
+        fetch('http://localhost:3000/api/addAsset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newAssetName, currency })
+        })
+        .then(response => response.json())
+        .then(() => {
+            loadAssets();
+        })
+        .catch(error => {
+            console.error('新しい資産の追加に失敗しました:', error);
+        });
+    }
+});
+
+
+
+
     // メモページを表示する関数
     function showMemoPage() {
         document.getElementById('main-content').style.display = 'none';
