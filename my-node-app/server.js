@@ -379,6 +379,33 @@ app.get('/api/getAssets', async (req, res) => {
     }
 });
 
+// 資産の更新API
+app.post('/api/updateAssetAmount', async (req, res) => {
+    const { assetId, amount } = req.body;
+
+    if (!assetId || !amount) {
+        return res.status(400).json({ success: false, message: '資産IDまたは金額が指定されていません。' });
+    }
+
+    try {
+        // 資産の現在の値を取得
+        const [assets] = await pool.execute('SELECT current_balance FROM assets WHERE id = ?', [assetId]);
+        if (assets.length === 0) {
+            return res.status(404).json({ success: false, message: '資産が見つかりません。' });
+        }
+
+        const currentBalance = parseFloat(assets[0].current_balance);
+        const newBalance = currentBalance + parseFloat(amount);
+
+        // 資産の値を更新
+        await pool.execute('UPDATE assets SET current_balance = ? WHERE id = ?', [newBalance, assetId]);
+        res.json({ success: true, newBalance });
+    } catch (err) {
+        console.error('資産の更新に失敗しました:', err);
+        res.status(500).json({ success: false, message: '資産の更新に失敗しました。' });
+    }
+});
+
 
 
 

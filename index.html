@@ -44,6 +44,10 @@
                     <!-- 利益の削除ボタンを追加 -->
                     <button class="delete-btn" id="delete-profit-btn">×</button>
                 </div>
+
+                    
+
+
                 <button id="add-profit-detail-btn">+ 利益詳細</button>
                 <!-- 利益詳細のモーダル -->
                 <div id="profit-detail-modal" class="modal">
@@ -64,6 +68,10 @@
                     <!-- 支出の削除ボタンを追加 -->
                     <button class="delete-btn" id="delete-expense-btn">×</button>
                 </div>
+
+
+
+
                 <button id="add-expense-detail-btn">+ 支出詳細</button>
                 <!-- 支出詳細のモーダル -->
                 <div id="expense-detail-modal" class="modal">
@@ -76,6 +84,12 @@
                     </div>
                 </div>
                 <div id="expense-details-list" class="details-list"></div> <!-- 支出の詳細リストの表示エリア -->
+
+<!-- ここに資産選択のドロップダウンを追加 -->
+<label for="asset-select">資産を選択:</label>
+<select id="asset-select">
+<!-- 資産のオプションを動的にロードすることを想定 -->
+</select>
 
                 <button id="save-btn">保存</button>
             </div>

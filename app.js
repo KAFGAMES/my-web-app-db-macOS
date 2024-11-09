@@ -12,12 +12,15 @@ let categoryCurrencies = {}; // カテゴリごとの通貨設定を保持
 
 document.addEventListener('DOMContentLoaded', async function() {
     try {
+
+        await loadAssets(); // 資産をロード
         // 初期化関数の呼び出し
         await initializeDisplay(); // 為替レートの取得と表示の初期化
         loadCategories(); // カテゴリの読み込み
         renderCalendar(currentDate); // カレンダーの初期表示
         selectToday(); // 今日の日付の選択
         displayGoalAmount(); // 目標金額の表示
+        
     } catch (error) {
         console.error("初期化中にエラーが発生しました:", error);
     }
@@ -307,6 +310,7 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
     // 利益・支出の保存
     saveButton.addEventListener('click', () => {
         if (selectedDate) {
+            saveExpenseWithAsset(); // 資産更新を含む保存処理を実行
             const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
             const profit = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
             const expense = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
@@ -448,6 +452,88 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
     displayGoalAmount();
 
     // 関数定義
+
+    // 既存の支出の保存ロジックに資産変動を追加
+    function saveExpenseWithAsset() {
+        const selectedAsset = document.getElementById('asset-select').value;
+        const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
+    
+        if (selectedAsset && expenseAmount > 0) {
+            fetch('http://localhost:3000/api/updateAssetAmount', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assetId: selectedAsset,
+                    amount: -expenseAmount // 支出なのでマイナス
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('支出が記録され、資産が更新されました。');
+                    saveExpense(); // 支出の保存
+                } else {
+                    alert('資産の更新に失敗しました。');
+                }
+            })
+            .catch(error => {
+                console.error('資産更新中にエラーが発生しました:', error);
+            });
+        } else {
+            saveExpense(); // 資産が未選択でも支出を保存
+        }
+    }
+    
+
+function saveExpense() {
+    const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
+    const profit = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
+    const expense = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
+    const memo = memoInput.value || "";
+    const profitDetailsStr = JSON.stringify(profitDetails);
+    const expenseDetailsStr = JSON.stringify(expenseDetails);
+
+    saveDataToDatabase(currentCategory, selectedDate, profit, expense, memo, profitDetailsStr, expenseDetailsStr, selectedCurrency, () => {
+        renderCalendar(currentDate);
+        const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+        if (selectedCell) {
+            selectedCell.classList.add('selected');
+        }
+    });
+}
+
+
+
+// 支出削除時の資産変動ロジック
+function deleteExpenseWithAsset(expenseId, expenseAmount, selectedAsset) {
+    if (selectedAsset && expenseAmount > 0) {
+        fetch('/api/updateAssetAmount', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                assetId: selectedAsset,
+                amount: expenseAmount // 削除時は資産を戻す
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('支出が削除され、資産が更新されました。');
+            } else {
+                alert('資産の更新に失敗しました。');
+            }
+        })
+        .catch(error => {
+            console.error('資産更新中にエラーが発生しました:', error);
+        });
+    }
+
+    // 既存の削除ロジックを呼び出す
+    deleteExpense(expenseId); // 既存の関数がある場合
+}
+
 
     // カテゴリをロードする関数
     function loadCategories(initialLoad = false) {
@@ -765,7 +851,19 @@ function loadAssets() {
 
             let totalAmountJPY = 0;
 
+            const assetSelect = document.getElementById('asset-select');
+            assetSelect.innerHTML = '<option value="">未選択</option>';
+
+
+
             assets.forEach(asset => {
+
+                const option = document.createElement('option');
+                option.value = asset.id; // もしくは他の識別子を使用
+                option.textContent = `${asset.name} (${asset.currency})`;
+                assetSelect.appendChild(option);
+
+
                 const assetDiv = document.createElement('div');
                 assetDiv.classList.add('asset-item');
 
@@ -851,6 +949,9 @@ function loadAssets() {
 
        
 }
+
+// ページ読み込み時に資産をロード
+document.addEventListener('DOMContentLoaded', loadAssets);
 
 // 資産金額を保存する関数
 function saveAssetAmount(assetId, amount) {
