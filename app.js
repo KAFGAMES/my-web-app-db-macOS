@@ -310,7 +310,7 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
     // 利益・支出の保存
     saveButton.addEventListener('click', () => {
         if (selectedDate) {
-            saveExpenseWithAsset(); // 資産更新を含む保存処理を実行
+            saveDataWithAsset(); // 資産更新を含む保存処理を実行
             const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
             const profit = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
             const expense = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
@@ -453,35 +453,65 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
 
     // 関数定義
 
-    // 既存の支出の保存ロジックに資産変動を追加
-    function saveExpenseWithAsset() {
+    function saveDataWithAsset() {
         const selectedAsset = document.getElementById('asset-select').value;
+        const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
         const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
     
-        if (selectedAsset && expenseAmount > 0) {
-            fetch('http://localhost:3000/api/updateAssetAmount', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    assetId: selectedAsset,
-                    amount: -expenseAmount // 支出なのでマイナス
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('支出が記録され、資産が更新されました。');
-                    saveExpense(); // 支出の保存
-                } else {
-                    alert('資産の更新に失敗しました。');
-                }
-            })
-            .catch(error => {
-                console.error('資産更新中にエラーが発生しました:', error);
-            });
+        if (selectedAsset) {
+            let totalAmount = 0;
+            if (profitAmount > 0) {
+                totalAmount += profitAmount; // 利益がある場合、資産を増加
+            }
+            if (expenseAmount > 0) {
+                totalAmount -= expenseAmount; // 支出がある場合、資産を減少
+            }
+            if (totalAmount !== 0) {
+                fetch('http://localhost:3000/api/updateAssetAmount', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        assetId: selectedAsset,
+                        amount: totalAmount
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('データが記録され、資産が更新されました。');
+                        saveData(); // データを保存
+                    } else {
+                        alert('資産の更新に失敗しました。');
+                    }
+                })
+                .catch(error => {
+                    console.error('資産更新中にエラーが発生しました:', error);
+                });
+            } else {
+                // 資産の更新が不要な場合
+                saveData();
+            }
         } else {
-            saveExpense(); // 資産が未選択でも支出を保存
+            // 資産が未選択の場合
+            saveData();
         }
+    }
+
+    function saveData() {
+        const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
+        const profit = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
+        const expense = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
+        const memo = memoInput.value || "";
+        const profitDetailsStr = JSON.stringify(profitDetails);
+        const expenseDetailsStr = JSON.stringify(expenseDetails);
+    
+        saveDataToDatabase(currentCategory, selectedDate, profit, expense, memo, profitDetailsStr, expenseDetailsStr, selectedCurrency, () => {
+            renderCalendar(currentDate);
+            const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+            if (selectedCell) {
+                selectedCell.classList.add('selected');
+            }
+        });
     }
     
 
