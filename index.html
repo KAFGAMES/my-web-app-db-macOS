@@ -37,6 +37,13 @@
             <div class="input-panel">
                 <h3>利益と支出を入力</h3>
 
+                <!-- ここに資産選択のドロップダウンを追加 -->
+<label for="asset-select">資産を選択:</label>
+<select id="asset-select">
+<!-- 資産のオプションを動的にロードすることを想定 -->
+</select>
+                
+
                 <!-- 利益の入力欄と削除ボタンを囲むdivを追加 -->
                 <div class="input-with-delete">
                     <label for="profit-input"><span class="profit-label">利益:</span></label>
@@ -85,11 +92,7 @@
                 </div>
                 <div id="expense-details-list" class="details-list"></div> <!-- 支出の詳細リストの表示エリア -->
 
-<!-- ここに資産選択のドロップダウンを追加 -->
-<label for="asset-select">資産を選択:</label>
-<select id="asset-select">
-<!-- 資産のオプションを動的にロードすることを想定 -->
-</select>
+
 
                 <button id="save-btn">保存</button>
             </div>

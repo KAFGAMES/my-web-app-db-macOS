@@ -374,7 +374,39 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
 
     // 削除ボタンのイベントリスナーを追加
     deleteProfitButton.addEventListener('click', () => {
+
+        
         if (selectedDate && currentCategory !== 'total') {
+
+            // 削除する利益の金額を取得
+            const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
+            const selectedAsset = document.getElementById('asset-select').value;
+
+            // 資産の更新
+        if (selectedAsset && profitAmount > 0) {
+            // 利益を削除するので、資産から利益金額を減算
+            fetch('http://localhost:3000/api/updateAssetAmount', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assetId: selectedAsset,
+                    amount: -profitAmount // 減算するのでマイナスを付ける
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('利益が削除され、資産が更新されました。');
+                } else {
+                    alert('資産の更新に失敗しました。');
+                }
+            })
+            .catch(error => {
+                console.error('資産更新中にエラーが発生しました:', error);
+            });
+        }
+
+
             deleteDataFromDatabase(currentCategory, selectedDate, ['profit', 'profit_details'], () => {
                 profitInput.value = 0;
                 profitDetails = [];
@@ -387,6 +419,37 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
 
     deleteExpenseButton.addEventListener('click', () => {
         if (selectedDate && currentCategory !== 'total') {
+
+            // 削除する支出の金額を取得
+        const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
+        const selectedAsset = document.getElementById('asset-select').value;
+
+        // 資産の更新
+        if (selectedAsset && expenseAmount > 0) {
+            // 支出を削除するので、資産に支出金額を加算
+            fetch('http://localhost:3000/api/updateAssetAmount', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assetId: selectedAsset,
+                    amount: expenseAmount // 加算するのでそのまま
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('支出が削除され、資産が更新されました。');
+                } else {
+                    alert('資産の更新に失敗しました。');
+                }
+            })
+            .catch(error => {
+                console.error('資産更新中にエラーが発生しました:', error);
+            });
+        }
+
+
+
             deleteDataFromDatabase(currentCategory, selectedDate, ['expense', 'expense_details'], () => {
                 expenseInput.value = 0;
                 expenseDetails = [];
