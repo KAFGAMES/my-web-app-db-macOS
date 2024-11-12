@@ -406,7 +406,19 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
             });
         }
 
-
+        if (!selectedAsset) {
+            if (confirm('キャンセルする場合の資産が未選択ですがよろしいでしょうか？')) {
+                // 確認された場合に削除処理を続行
+                deleteDataFromDatabase(currentCategory, selectedDate, ['profit', 'profit_details'], () => {
+                    profitInput.value = 0;
+                    profitDetails = [];
+                    updateProfitDetailsList();
+                    loadDataForSelectedDate();
+                    renderCalendar(currentDate);
+                });
+            }
+        } else {
+            // 資産が選択されている場合の通常の削除処理
             deleteDataFromDatabase(currentCategory, selectedDate, ['profit', 'profit_details'], () => {
                 profitInput.value = 0;
                 profitDetails = [];
@@ -414,6 +426,14 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
                 loadDataForSelectedDate();
                 renderCalendar(currentDate);
             });
+        }
+            // deleteDataFromDatabase(currentCategory, selectedDate, ['profit', 'profit_details'], () => {
+            //     profitInput.value = 0;
+            //     profitDetails = [];
+            //     updateProfitDetailsList();
+            //     loadDataForSelectedDate();
+            //     renderCalendar(currentDate);
+            // });
         }
     });
 
@@ -448,8 +468,19 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
             });
         }
 
-
-
+        if (!selectedAsset) {
+            if (confirm('キャンセルする場合の資産が未選択ですがよろしいでしょうか？')) {
+                // 確認された場合に削除処理を続行
+                deleteDataFromDatabase(currentCategory, selectedDate, ['expense', 'expense_details'], () => {
+                    expenseInput.value = 0;
+                    expenseDetails = [];
+                    updateExpenseDetailsList();
+                    loadDataForSelectedDate();
+                    renderCalendar(currentDate);
+                });
+            }
+        } else {
+            // 資産が選択されている場合の通常の削除処理
             deleteDataFromDatabase(currentCategory, selectedDate, ['expense', 'expense_details'], () => {
                 expenseInput.value = 0;
                 expenseDetails = [];
@@ -457,6 +488,16 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
                 loadDataForSelectedDate();
                 renderCalendar(currentDate);
             });
+        }
+
+
+            // deleteDataFromDatabase(currentCategory, selectedDate, ['expense', 'expense_details'], () => {
+            //     expenseInput.value = 0;
+            //     expenseDetails = [];
+            //     updateExpenseDetailsList();
+            //     loadDataForSelectedDate();
+            //     renderCalendar(currentDate);
+            // });
         }
     });
 
