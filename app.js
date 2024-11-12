@@ -568,57 +568,104 @@ function getAssetCurrency(assetId) {
 }
 
 
-    function saveDataWithAsset() {
-        const selectedAsset = document.getElementById('asset-select').value;
-        const assetCurrency = getAssetCurrency(selectedAsset); // 資産の通貨を取得する関数を仮定
-        const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
-        const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
+function saveDataWithAsset() {
+    const selectedAsset = document.getElementById('asset-select').value;
+    const assetCurrency = getAssetCurrency(selectedAsset);
+    const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
+    const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
+    const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
+
+    // 以前のデータを取得
+    loadDataFromDatabase(currentCategory, selectedDate, (oldData) => {
+        let oldProfit = 0;
+        let oldExpense = 0;
+
+        if (oldData) {
+            oldProfit = parseFloat(oldData.profit) || 0;
+            oldExpense = parseFloat(oldData.expense) || 0;
+
+            // 通貨変換（必要な場合）
+            if (oldData.currency !== assetCurrency) {
+                oldProfit = convertAmount(oldProfit, oldData.currency, assetCurrency);
+                oldExpense = convertAmount(oldExpense, oldData.currency, assetCurrency);
+            }
+        }
+
+        // 新しい利益・支出の調整（通貨変換）
         let adjustedProfit = profitAmount;
         let adjustedExpense = expenseAmount;
 
-        // 利益または支出の通貨が資産の通貨と異なる場合、変換を行う
-        if (categoryCurrencies[currentCategory] !== assetCurrency) {
-          adjustedProfit = convertAmount(profitAmount, categoryCurrencies[currentCategory], assetCurrency);
-          adjustedExpense = convertAmount(expenseAmount, categoryCurrencies[currentCategory], assetCurrency);
+        if (selectedCurrency !== assetCurrency) {
+            adjustedProfit = convertAmount(profitAmount, selectedCurrency, assetCurrency);
+            adjustedExpense = convertAmount(expenseAmount, selectedCurrency, assetCurrency);
         }
+
+        // 差分を計算
+        const deltaProfit = adjustedProfit - oldProfit;
+        const deltaExpense = adjustedExpense - oldExpense;
+
         if (selectedAsset) {
-            let totalAmount = 0;
-            if (adjustedProfit > 0) {
-                totalAmount += adjustedProfit; // 利益がある場合、資産を増加
-            }
-            if (adjustedExpense > 0) {
-                totalAmount -= adjustedExpense; // 支出がある場合、資産を減少
-            }
-            if (totalAmount !== 0) {
-                fetch('http://localhost:3000/api/updateAssetAmount', {
+            const promises = [];
+
+            // 利益の差分を資産に反映
+            if (deltaProfit !== 0) {
+                const profitPromise = fetch('http://localhost:3000/api/updateAssetAmount', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         assetId: selectedAsset,
-                        amount: totalAmount
+                        amount: deltaProfit
                     }),
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        alert('データが記録され、資産が更新されました。');
-                        saveData(); // データを保存
-                    } else {
-                        alert('資産の更新に失敗しました。');
+                    if (!data.success) {
+                        alert('利益による資産の更新に失敗しました。');
                     }
                 })
                 .catch(error => {
-                    console.error('資産更新中にエラーが発生しました:', error);
+                    console.error('資産更新中にエラーが発生しました（利益）:', error);
                 });
-            } else {
-                // 資産の更新が不要な場合
-                saveData();
+
+                promises.push(profitPromise);
             }
+
+            // 支出の差分を資産から減算
+            if (deltaExpense !== 0) {
+                const expensePromise = fetch('http://localhost:3000/api/updateAssetAmount', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        assetId: selectedAsset,
+                        amount: -deltaExpense // 差分をマイナスして減算
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert('支出による資産の更新に失敗しました。');
+                    }
+                })
+                .catch(error => {
+                    console.error('資産更新中にエラーが発生しました（支出）:', error);
+                });
+
+                promises.push(expensePromise);
+            }
+
+            // 資産更新後にデータを保存
+            Promise.all(promises).then(() => {
+                alert('データが記録され、資産が更新されました。');
+                saveData();
+            });
         } else {
-            // 資産が未選択の場合
+            // 資産が未選択の場合、データのみ保存
             saveData();
         }
-    }
+    });
+}
+
+
 
     function saveData() {
         const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
