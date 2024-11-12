@@ -9,6 +9,7 @@ let profitDetails = [];
 let expenseDetails = [];
 let categoriesList = [];
 let categoryCurrencies = {}; // カテゴリごとの通貨設定を保持
+let assetsList = []; // 資産のリストを保持
 
 document.addEventListener('DOMContentLoaded', async function() {
     try {
@@ -79,17 +80,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateDisplayedAmounts();
 
     // Helper function to convert amounts based on selected currency
-    function convertAmount(amount, fromCurrency, toCurrency) {
-        if (fromCurrency === toCurrency) {
-            return amount;
-        }
-        if (fromCurrency === 'JPY' && toCurrency === 'USD' && usdToJpyRate) {
-            return (amount / usdToJpyRate).toFixed(2); // Convert JPY to USD
-        } else if (fromCurrency === 'USD' && toCurrency === 'JPY' && usdToJpyRate) {
-            return (amount * usdToJpyRate).toFixed(0); // Convert USD back to JPY
-        }
-        return amount; // Return the original amount if currency or rate is missing
+    // 修正後の convertAmount 関数
+function convertAmount(amount, fromCurrency, toCurrency) {
+    if (fromCurrency === toCurrency) {
+        return amount;
     }
+    if (fromCurrency === 'JPY' && toCurrency === 'USD' && usdToJpyRate) {
+        return amount / usdToJpyRate; // JPYからUSDへの変換
+    } else if (fromCurrency === 'USD' && toCurrency === 'JPY' && usdToJpyRate) {
+        return amount * usdToJpyRate; // USDからJPYへの変換
+    }
+    return amount; // 通貨情報やレートがない場合は元の金額を返す
+}
+
 
     // Update displayed amounts based on currency selection
     function updateDisplayedAmounts() {
@@ -557,18 +560,34 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
 
     // 関数定義
 
+     // 資産の通貨を取得する関数を定義
+     // 修正後（方法1）：'==' を使用
+function getAssetCurrency(assetId) {
+    const asset = assetsList.find(a => a.id == assetId); // '==' を使用して型を自動変換
+    return asset ? asset.currency : null;
+}
+
+
     function saveDataWithAsset() {
         const selectedAsset = document.getElementById('asset-select').value;
+        const assetCurrency = getAssetCurrency(selectedAsset); // 資産の通貨を取得する関数を仮定
         const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
         const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
-    
+        let adjustedProfit = profitAmount;
+        let adjustedExpense = expenseAmount;
+
+        // 利益または支出の通貨が資産の通貨と異なる場合、変換を行う
+        if (categoryCurrencies[currentCategory] !== assetCurrency) {
+          adjustedProfit = convertAmount(profitAmount, categoryCurrencies[currentCategory], assetCurrency);
+          adjustedExpense = convertAmount(expenseAmount, categoryCurrencies[currentCategory], assetCurrency);
+        }
         if (selectedAsset) {
             let totalAmount = 0;
-            if (profitAmount > 0) {
-                totalAmount += profitAmount; // 利益がある場合、資産を増加
+            if (adjustedProfit > 0) {
+                totalAmount += adjustedProfit; // 利益がある場合、資産を増加
             }
-            if (expenseAmount > 0) {
-                totalAmount -= expenseAmount; // 支出がある場合、資産を減少
+            if (adjustedExpense > 0) {
+                totalAmount -= adjustedExpense; // 支出がある場合、資産を減少
             }
             if (totalAmount !== 0) {
                 fetch('http://localhost:3000/api/updateAssetAmount', {
@@ -976,12 +995,24 @@ function displayTotalAssetsInJPY() {
 }
 
 // 資産をロードする関数
-function loadAssets() {
-    fetch('http://localhost:3000/api/getAssets')
-        .then(response => response.json())
-        .then(assets => {
-            const assetListDiv = document.getElementById('asset-list');
-            assetListDiv.innerHTML = '';
+async　function loadAssets() {
+
+
+    try {
+        const response = await fetch('http://localhost:3000/api/getAssets');
+        const assets = await response.json();
+
+        assetsList = assets; // ここでグローバル変数に代入
+
+        const assetListDiv = document.getElementById('asset-list');
+        assetListDiv.innerHTML = '';
+
+
+    // fetch('http://localhost:3000/api/getAssets')
+    //     .then(response => response.json())
+    //     .then(assets => {
+    //         const assetListDiv = document.getElementById('asset-list');
+    //         assetListDiv.innerHTML = '';
 
             let totalAmountJPY = 0;
 
@@ -1076,10 +1107,13 @@ function loadAssets() {
 
     assetListDiv.appendChild(totalDisplay);
 
-        })
-        .catch(error => {
-            console.error('資産のロードに失敗しました:', error);
-        });
+        // })
+        // .catch(error => {
+        //     console.error('資産のロードに失敗しました:', error);
+        // });
+    } catch (error) {
+        console.error('資産のロードに失敗しました:', error);
+    }
 
        
 }
