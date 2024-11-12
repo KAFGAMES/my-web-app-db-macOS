@@ -102,8 +102,10 @@ function convertAmount(amount, fromCurrency, toCurrency) {
         const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
         const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
 
-        profitInput.value = `${profitAmount} ${selectedCurrency}`;
-        expenseInput.value = `${expenseAmount} ${selectedCurrency}`;
+        // profitInput.value = `${profitAmount} ${selectedCurrency}`;
+        // expenseInput.value = `${expenseAmount} ${selectedCurrency}`;
+        profitInput.value = `${profitAmount}`;
+        expenseInput.value = `${expenseAmount}`;
 
         // Update monthly balance display
         const balance = parseFloat(monthlyBalanceDiv.textContent.replace(/[^0-9.-]/g, '')) || 0;
