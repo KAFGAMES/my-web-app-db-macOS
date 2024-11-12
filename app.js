@@ -12,6 +12,11 @@ let categoryCurrencies = {}; // カテゴリごとの通貨設定を保持
 let assetsList = []; // 資産のリストを保持
 
 document.addEventListener('DOMContentLoaded', async function() {
+
+    // 初期化で現在の日付を選択状態にする
+    const today = new Date();
+    selectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
     try {
 
         await loadAssets(); // 資産をロード
@@ -21,11 +26,24 @@ document.addEventListener('DOMContentLoaded', async function() {
         renderCalendar(currentDate); // カレンダーの初期表示
         selectToday(); // 今日の日付の選択
         displayGoalAmount(); // 目標金額の表示
+
+        // 初期状態でデータをロード
+        loadDataForSelectedDate(); // selectedDateに基づきデータをロード
         
     } catch (error) {
         console.error("初期化中にエラーが発生しました:", error);
     }
     // DOM要素の取得
+
+    // // ページロード時に初期選択状態のデータを反映する
+    // if (selectedDate) {
+    //     loadDataForSelectedDate(); // 既存のデータロード関数を呼び出して初期状態を反映
+    // } else {
+    //     // 初期選択状態で日付がない場合に現在日付を設定してロードする
+    //     const today = new Date();
+    //     selectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    //     loadDataForSelectedDate();
+    // }
 
     const calendarBody = document.getElementById('calendar-body');
     const monthYear = document.getElementById('month-year');
@@ -314,6 +332,12 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
 
     // 利益・支出の保存
     saveButton.addEventListener('click', () => {
+
+        if (!selectedDate) {
+            alert('日付を選択してください。');
+            return;
+        }
+
         if (selectedDate) {
             saveDataWithAsset(); // 資産更新を含む保存処理を実行
             const selectedCurrency = categoryCurrencies[currentCategory] || 'JPY';
@@ -377,6 +401,12 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
         document.getElementById('expense-detail-description').value = '';
     });
 
+    let originalProfit = 0; // 元の利益を保持する変数
+    let originalExpense = 0; // 元の支出を保持する変数
+
+    
+
+
     // 削除ボタンのイベントリスナーを追加
     deleteProfitButton.addEventListener('click', () => {
 
@@ -387,15 +417,16 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
             const profitAmount = parseFloat(profitInput.value.replace(/[^0-9.-]/g, '')) || 0;
             const selectedAsset = document.getElementById('asset-select').value;
 
+            // const deltaProfit = originalProfit - profitAmount; // 元の利益との差分を計算
             // 資産の更新
-        if (selectedAsset && profitAmount > 0) {
+        if (selectedAsset && originalProfit > 0) {
             // 利益を削除するので、資産から利益金額を減算
             fetch('http://localhost:3000/api/updateAssetAmount', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     assetId: selectedAsset,
-                    amount: -profitAmount // 減算するのでマイナスを付ける
+                    amount: -originalProfit
                 }),
             })
             .then(response => response.json())
@@ -449,15 +480,17 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
         const expenseAmount = parseFloat(expenseInput.value.replace(/[^0-9.-]/g, '')) || 0;
         const selectedAsset = document.getElementById('asset-select').value;
 
+        // const deltaExpense = originalExpense - expenseAmount; // 元の支出との差分を計算
+
         // 資産の更新
-        if (selectedAsset && expenseAmount > 0) {
+        if (selectedAsset && originalExpense > 0) {
             // 支出を削除するので、資産に支出金額を加算
             fetch('http://localhost:3000/api/updateAssetAmount', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     assetId: selectedAsset,
-                    amount: expenseAmount // 加算するのでそのまま
+                    amount: originalExpensee // 支出は減算
                 }),
             })
             .then(response => response.json())
@@ -1574,6 +1607,8 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
             } else {
                 loadDataFromDatabase(currentCategory, selectedDate, (data) => {
                     if (data) {
+                        originalProfit = parseFloat(data.profit) || 0; // 元の利益を保存
+                        originalExpense = parseFloat(data.expense) || 0; // 元の支出を保存
                         profitInput.value = `${data.profit || 0} ${data.currency}`;
                         expenseInput.value = `${data.expense || 0} ${data.currency}`;
                         memoInput.value = data.memo || "";
@@ -1582,6 +1617,8 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
                         updateProfitDetailsList();
                         updateExpenseDetailsList();
                     } else {
+                        originalProfit = 0;
+                        originalExpense = 0;
                         profitInput.value = 0;
                         expenseInput.value = 0;
                         memoInput.value = "";
@@ -1753,12 +1790,12 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
   // 初期化関数
 async function initializeDisplay() {
     // 一時的に空に設定して初期表示を防止
-    profitInput.value = '';
-    expenseInput.value = '';
-    monthlyBalanceDiv.textContent = '';
+    // profitInput.value = '';
+    // expenseInput.value = '';
+    // monthlyBalanceDiv.textContent = '';
 
     await fetchExchangeRate(); // 為替レート取得
-    updateDisplayedAmounts(); // 表示更新
+    // updateDisplayedAmounts(); // 表示更新
 }
 
     // 合計カテゴリの場合のカレンダーを描画する関数
