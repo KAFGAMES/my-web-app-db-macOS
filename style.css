@@ -487,3 +487,23 @@ html, body {
     color: #333;
     margin-bottom: 20px;
 }
+
+
+/* お気に入りアイテムのスタイル */
+.favorite-item {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 5px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.favorite-item:hover {
+    background-color: #f0f8ff;
+}
+

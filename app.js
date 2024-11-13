@@ -61,6 +61,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     expenseInput.value = `${expenseInput.value || 0} JPY`;
     //monthlyBalanceDiv.textContent = `月間損益: ${monthlyBalanceDiv.textContent || 0} JPY`;
 
+    // document.getElementById('add-favorite-btn').addEventListener('click', addFavoriteFunction);
+
     const goalInput = document.getElementById('goal-input');
     const goalSaveButton = document.getElementById('goal-save-btn');
     const goalChartCanvas = document.getElementById('goal-chart');
@@ -160,6 +162,25 @@ function convertAmount(amount, fromCurrency, toCurrency) {
         document.getElementById('category-management-page').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
     });
+
+    document.getElementById('add-favorite-btn').addEventListener('click', addFavorite);
+
+    // お気に入りページを開くボタンのイベントリスナー
+document.getElementById('favorite-menu-btn').addEventListener('click', () => {
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('memo-page').style.display = 'none';
+    document.getElementById('category-management-page').style.display = 'none';
+    document.getElementById('asset-management-page').style.display = 'none';
+    document.getElementById('favorite-page').style.display = 'block';
+    loadFavorites(); // お気に入りリストを読み込む
+});
+
+// お気に入りページの戻るボタンのイベントリスナー
+document.getElementById('favorite-back-btn').addEventListener('click', () => {
+    document.getElementById('favorite-page').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+});
+
 
     // カテゴリ管理ページを開くボタンのイベントリスナー
     document.getElementById('category-management-btn').addEventListener('click', showCategoryManagementPage);
@@ -1348,7 +1369,7 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
     }
 
     // カレンダーを描画する関数
-    function renderCalendar(date) {
+    function renderCalendar(date, callback) {
 
         // カレンダーの内容をクリア
         calendarBody.innerHTML = '';
@@ -1396,6 +1417,11 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
                             cell.classList.add('today');
                         }
 
+                        // ここで selectedDate と一致する場合に selected クラスを追加
+                        if (cellDateString === selectedDate) {
+                         cell.classList.add('selected');
+                        }
+
                         if (dataMap[cellDateString]) {
                             const entry = dataMap[cellDateString];
 
@@ -1432,6 +1458,8 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
             }
 
             calculateMonthlyBalance(year, month);
+            // カレンダー描画後にコールバックを呼び出す
+        if (callback) callback();
         });
     }
 
@@ -1902,6 +1930,58 @@ async function initializeDisplay() {
             calculateTotalMonthlyBalance(dataMap);
         });
     }
+
+    // お気に入りに追加する関数
+function addFavorite() {
+    if (selectedDate) {
+        const profit = parseFloat(profitInput.value) || 0;
+        const expense = parseFloat(expenseInput.value) || 0;
+        const memo = memoInput.value || "";
+        fetch('http://localhost:3000/api/addFavorite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: selectedDate, profit, expense, memo })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('お気に入りに登録されました');
+            loadFavorites(); // お気に入りのリストを再読み込み
+        })
+        .catch(error => console.error('お気に入り登録に失敗しました:', error));
+    }
+}
+
+function loadFavorites() {
+    fetch('http://localhost:3000/api/getFavorites')
+    .then(response => response.json())
+    .then(data => {
+        const favoriteListDiv = document.getElementById('favorite-list');
+        favoriteListDiv.innerHTML = '';
+        data.forEach(fav => {
+            const listItem = document.createElement('button');
+            listItem.textContent = `${fav.date} - 利益: ${fav.profit} - 支出: ${fav.expense}`;
+            listItem.addEventListener('click', () => {
+                selectedDate = fav.date;
+                currentDate = new Date(selectedDate);
+                renderCalendar(currentDate, () => {
+                const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+                if (selectedCell) {
+                    selectedCell.classList.add('selected');
+                    selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                loadDataForSelectedDate();
+            });
+                // メインコンテンツに戻る
+                document.getElementById('favorite-page').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            });
+            favoriteListDiv.appendChild(listItem);
+        });
+    })
+    .catch(error => console.error('お気に入りリストの取得に失敗しました:', error));
+}
+
+
 
     // 合計カテゴリの場合の月間損益を計算する関数
     function calculateTotalMonthlyBalance(dataMap) {

@@ -25,6 +25,8 @@
             <button id="category-management-btn">カテゴリ管理</button>
             <!-- 資産管理ボタン -->
             <button id="asset-management-btn">資産管理</button>
+            <!-- ...既存のメニュー項目... -->
+            <button id="favorite-menu-btn">お気に入り</button>
             <!-- メモボタンを追加 -->
             <button id="memo-menu-btn">メモ</button>
         </div>
@@ -95,6 +97,8 @@
 
 
                 <button id="save-btn">保存</button>
+                <!-- ここにお気に入りボタンを追加 -->
+                <button id="add-favorite-btn">お気に入りに追加</button>
             </div>
 
             <!-- 中央: カレンダー -->
@@ -172,6 +176,15 @@
         <button id="add-asset-btn">新しい資産を追加</button>
         <button id="asset-management-back-btn">戻る</button>
     </div>
+
+    <div id="favorite-page" style="display: none;">
+        <h2>お気に入りリスト</h2>
+        <div id="favorite-list">
+            <!-- お気に入りの日付がここに動的に追加される -->
+        </div>
+        <button id="favorite-back-btn">戻る</button>
+    </div>
+    
     
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

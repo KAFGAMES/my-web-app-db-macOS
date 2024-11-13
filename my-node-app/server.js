@@ -379,6 +379,33 @@ app.get('/api/getAssets', async (req, res) => {
     }
 });
 
+// お気に入りデータを保存するAPI
+app.post('/api/addFavorite', async (req, res) => {
+    const { date, profit, expense, memo } = req.body;
+    const query = 'INSERT INTO favorites (date, profit, expense, memo) VALUES (?, ?, ?, ?) ' +
+                  'ON DUPLICATE KEY UPDATE profit = VALUES(profit), expense = VALUES(expense), memo = VALUES(memo)';
+    try {
+        await pool.execute(query, [date, profit, expense, memo]);
+        res.json({ message: 'お気に入りが保存されました' });
+    } catch (err) {
+        console.error('お気に入りの保存に失敗しました:', err);
+        res.status(500).json({ error: 'お気に入りの保存に失敗しました' });
+    }
+});
+
+// お気に入りデータを取得するAPI
+app.get('/api/getFavorites', async (req, res) => {
+    const query = 'SELECT * FROM favorites';
+    try {
+        const [results] = await pool.execute(query);
+        res.json(results);
+    } catch (err) {
+        console.error('お気に入りデータの取得に失敗しました:', err);
+        res.status(500).json({ error: 'お気に入りデータの取得に失敗しました' });
+    }
+});
+
+
 // 資産の更新API
 app.post('/api/updateAssetAmount', async (req, res) => {
     const { assetId, amount } = req.body;
