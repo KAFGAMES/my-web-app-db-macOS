@@ -381,17 +381,17 @@ app.get('/api/getAssets', async (req, res) => {
 
 // お気に入りデータを保存するAPI
 app.post('/api/addFavorite', async (req, res) => {
-    const { date, profit, expense, memo, category, title } = req.body; // 'title'を追加
-    const query = 'INSERT INTO favorites (date, profit, expense, memo, category, title) VALUES (?, ?, ?, ?, ?, ?) ' +
-                  'ON DUPLICATE KEY UPDATE profit = VALUES(profit), expense = VALUES(expense), memo = VALUES(memo), category = VALUES(category), title = VALUES(title)';
+    const { date, profit, expense, memo, category, title } = req.body;
+    const query = 'INSERT INTO favorites (date, profit, expense, memo, category, title) VALUES (?, ?, ?, ?, ?, ?)';
     try {
-        await pool.execute(query, [date, profit, expense, memo, category, title]);
-        res.json({ message: 'お気に入りが保存されました' });
+        const [result] = await pool.execute(query, [date, profit, expense, memo, category, title]);
+        res.json({ message: 'お気に入りが保存されました', id: result.insertId });
     } catch (err) {
         console.error('お気に入りの保存に失敗しました:', err);
         res.status(500).json({ error: 'お気に入りの保存に失敗しました' });
     }
 });
+
 
 
 // お気に入りデータを取得するAPI
@@ -405,6 +405,32 @@ app.get('/api/getFavorites', async (req, res) => {
         res.status(500).json({ error: 'お気に入りデータの取得に失敗しました' });
     }
 });
+
+// お気に入りを削除するAPI
+app.post('/api/removeFavorite', async (req, res) => {
+    const { id } = req.body;
+
+    if (!id) {
+        res.status(400).json({ error: '削除するお気に入りのIDが指定されていません' });
+        return;
+    }
+
+    const query = 'DELETE FROM favorites WHERE id = ?';
+
+    try {
+        const [result] = await pool.execute(query, [id]);
+        if (result.affectedRows === 0) {
+            res.status(404).json({ error: '指定されたIDのお気に入りが見つかりませんでした' });
+        } else {
+            res.json({ message: 'お気に入りが削除されました' });
+        }
+    } catch (err) {
+        console.error('お気に入りの削除に失敗しました:', err);
+        res.status(500).json({ error: 'お気に入りの削除に失敗しました' });
+    }
+});
+
+
 
 
 // 資産の更新API

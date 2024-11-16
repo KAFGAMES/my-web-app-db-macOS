@@ -1984,6 +1984,7 @@ async function initializeDisplay() {
         return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
+// 修正された loadFavorites 関数
 function loadFavorites() {
     fetch('http://localhost:3000/api/getFavorites')
     .then(response => response.json())
@@ -1991,39 +1992,83 @@ function loadFavorites() {
         const favoriteListDiv = document.getElementById('favorite-list');
         favoriteListDiv.innerHTML = '';
         data.forEach(fav => {
-            const listItem = document.createElement('button'); // ここで定義
-            // お気に入りリストに入力されたテキストとデータを表示
-            listItem.textContent = `${fav.title}：利益 ${fav.profit}円 支出 ${fav.expense}円 - ${formatDateToJapanese(fav.date)}`;
-            listItem.addEventListener('click', () => {
-                 // ISO形式の日付文字列をDateオブジェクトに変換
-    const dateObj = new Date(fav.date);
-    // "YYYY-MM-DD" の形式に再フォーマット
-    selectedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-
-                currentDate = new Date(selectedDate);
-                console.log('selectedDate:', selectedDate);
-                console.log('currentDate:', currentDate);
-                currentCategory = fav.category; // カテゴリーを設定
-                categorySelect.value = currentCategory; // プルダウンを更新
-                categorySelect.dispatchEvent(new Event('change')); // カテゴリー変更イベントを発火
-
-                renderCalendar(currentDate, () => {
-                    const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
-                    if (selectedCell) {
-                        selectedCell.classList.add('selected');
-                        selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                    loadDataForSelectedDate();
-                });
-                // メインコンテンツに戻る
-                document.getElementById('favorite-page').style.display = 'none';
-                document.getElementById('main-content').style.display = 'block';
-            });
-            favoriteListDiv.appendChild(listItem);
+            renderFavoriteItem(fav); // favオブジェクトを渡す
         });
     })
     .catch(error => console.error('お気に入りリストの取得に失敗しました:', error));
 }
+
+// 修正された renderFavoriteItem 関数
+function renderFavoriteItem(fav) {
+    const list = document.getElementById('favorite-list');
+    
+    const item = document.createElement('div');
+    item.classList.add('favorite-item');
+    item.dataset.id = fav.id;
+
+    const itemText = document.createElement('span');
+    itemText.textContent = `${fav.title}：利益 ${fav.profit}円 支出 ${fav.expense}円 - ${formatDateToJapanese(fav.date)}`;
+
+    // お気に入り項目をクリックしたときのイベントリスナーを追加
+    itemText.addEventListener('click', () => {
+        const dateObj = new Date(fav.date);
+        selectedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+
+        currentDate = new Date(selectedDate);
+        currentCategory = fav.category;
+        categorySelect.value = currentCategory;
+        categorySelect.dispatchEvent(new Event('change'));
+
+        renderCalendar(currentDate, () => {
+            const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+            if (selectedCell) {
+                selectedCell.classList.add('selected');
+                selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            loadDataForSelectedDate();
+        });
+
+        document.getElementById('favorite-page').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+    });
+
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = '❌';
+    deleteButton.classList.add('delete-button');
+    deleteButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // イベントのバブリングを停止
+        if (!fav.id) {
+            console.error('削除しようとしているお気に入りのIDが存在しません:', fav);
+            return;
+        }
+        removeFavoriteItem(fav.id);
+        list.removeChild(item);
+    });
+
+    item.appendChild(itemText);
+    item.appendChild(deleteButton);
+    list.appendChild(item);
+}
+
+function removeFavoriteItem(id) {
+    // 必要に応じてデータベースやバックエンドとの通信処理を追加
+    fetch(`http://localhost:3000/api/removeFavorite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('お気に入りが削除されました:', data);
+    })
+    .catch(error => {
+        console.error('お気に入りの削除に失敗しました:', error);
+    });
+}
+
+// // テスト用: お気に入りを追加
+// renderFavoriteItem('テストのお気に入り', 1);
+
 
 
 
