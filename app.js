@@ -14,6 +14,7 @@ let assetsList = []; // 資産のリストを保持
 document.addEventListener('DOMContentLoaded', async function() {
 
     // 初期化で現在の日付を選択状態にする
+    // selectedDateの初期化
     const today = new Date();
     selectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -274,6 +275,17 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
     // カテゴリや日付が変更されたときの処理
     categorySelect.addEventListener('change', function() {
         currentCategory = this.value;
+
+        // カレンダーを再描画
+    renderCalendar(currentDate, () => {
+        // カレンダー再描画後に選択状態を再設定
+        const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+        if (selectedCell) {
+            selectedCell.classList.add('selected');
+            selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+
         if (currentCategory === '') {
             // カテゴリが選択されていない場合、入力を無効化
             resetInputFields();
@@ -1413,6 +1425,7 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
                         cell.textContent = '';
                     } else {
                         const cellDateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(dateCount).padStart(2, '0')}`;
+                        console.log('cellDateString:', cellDateString);
                         cell.setAttribute('data-date', cellDateString);
 
                         const dateNumberDiv = document.createElement('div');
@@ -1465,8 +1478,10 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
             }
 
             calculateMonthlyBalance(year, month);
-            // カレンダー描画後にコールバックを呼び出す
-        if (callback) callback();
+            // カレンダー描画後にコールバックを実行
+    if (typeof callback === 'function') {
+        callback();
+    }
         });
     }
 
@@ -1971,8 +1986,14 @@ function loadFavorites() {
             const listItem = document.createElement('button');
             listItem.textContent = `${fav.date} - 利益: ${fav.profit} - 支出: ${fav.expense}`;
             listItem.addEventListener('click', () => {
-                selectedDate = fav.date;
+                 // ISO形式の日付文字列をDateオブジェクトに変換
+    const dateObj = new Date(fav.date);
+    // "YYYY-MM-DD" の形式に再フォーマット
+    selectedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+
                 currentDate = new Date(selectedDate);
+                console.log('selectedDate:', selectedDate);
+                console.log('currentDate:', currentDate);
                 currentCategory = fav.category; // カテゴリーを設定
                 categorySelect.value = currentCategory; // プルダウンを更新
                 categorySelect.dispatchEvent(new Event('change')); // カテゴリー変更イベントを発火
