@@ -9,3 +9,6 @@ CREATE TABLE favorites (
 
 ALTER TABLE favorites ADD COLUMN category VARCHAR(255);
 
+ALTER TABLE favorites ADD COLUMN title VARCHAR(255) AFTER category;
+
+
