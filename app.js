@@ -328,7 +328,7 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
             addExpenseDetailButton.disabled = false;
 
             loadDataForSelectedDate();
-            renderCalendar(currentDate);
+            // renderCalendar(currentDate);
             calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
             displayGoalAmount();
             updateDisplayedAmounts();
@@ -2022,14 +2022,14 @@ function renderFavoriteItem(fav) {
         categorySelect.value = currentCategory;
         categorySelect.dispatchEvent(new Event('change'));
 
-        renderCalendar(currentDate, () => {
-            const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
-            if (selectedCell) {
-                selectedCell.classList.add('selected');
-                selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            loadDataForSelectedDate();
-        });
+        // renderCalendar(currentDate, () => {
+        //     const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+        //     if (selectedCell) {
+        //         selectedCell.classList.add('selected');
+        //         selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        //     }
+        //     loadDataForSelectedDate();
+        // });
 
         document.getElementById('favorite-page').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
