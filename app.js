@@ -610,7 +610,14 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
 
     // 初期化関数の呼び出し
     loadCategories();
-    renderCalendar(currentDate);
+    renderCalendar(currentDate, () => {
+        const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+        if (selectedCell) {
+            selectedCell.classList.add('selected');
+            selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+    
     selectToday();
     displayGoalAmount();
 
@@ -1932,24 +1939,27 @@ async function initializeDisplay() {
     }
 
     // お気に入りに追加する関数
-function addFavorite() {
-    if (selectedDate) {
-        const profit = parseFloat(profitInput.value) || 0;
-        const expense = parseFloat(expenseInput.value) || 0;
-        const memo = memoInput.value || "";
-        fetch('http://localhost:3000/api/addFavorite', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date: selectedDate, profit, expense, memo })
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert('お気に入りに登録されました');
-            loadFavorites(); // お気に入りのリストを再読み込み
-        })
-        .catch(error => console.error('お気に入り登録に失敗しました:', error));
+    function addFavorite() {
+        if (selectedDate) {
+            const profit = parseFloat(profitInput.value) || 0;
+            const expense = parseFloat(expenseInput.value) || 0;
+            const memo = memoInput.value || "";
+            const category = currentCategory; // 現在のカテゴリーを取得
+    
+            fetch('http://localhost:3000/api/addFavorite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: selectedDate, profit, expense, memo, category }) // categoryを追加
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('お気に入りに登録されました');
+                loadFavorites(); // お気に入りのリストを再読み込み
+            })
+            .catch(error => console.error('お気に入り登録に失敗しました:', error));
+        }
     }
-}
+    
 
 function loadFavorites() {
     fetch('http://localhost:3000/api/getFavorites')
@@ -1963,14 +1973,18 @@ function loadFavorites() {
             listItem.addEventListener('click', () => {
                 selectedDate = fav.date;
                 currentDate = new Date(selectedDate);
+                currentCategory = fav.category; // カテゴリーを設定
+                categorySelect.value = currentCategory; // プルダウンを更新
+                categorySelect.dispatchEvent(new Event('change')); // カテゴリー変更イベントを発火
+
                 renderCalendar(currentDate, () => {
-                const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
-                if (selectedCell) {
-                    selectedCell.classList.add('selected');
-                    selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                loadDataForSelectedDate();
-            });
+                    const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+                    if (selectedCell) {
+                        selectedCell.classList.add('selected');
+                        selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    loadDataForSelectedDate();
+                });
                 // メインコンテンツに戻る
                 document.getElementById('favorite-page').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';

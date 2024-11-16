@@ -6,3 +6,6 @@ CREATE TABLE favorites (
     memo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE favorites ADD COLUMN category VARCHAR(255);
+
