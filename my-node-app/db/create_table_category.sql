@@ -17,3 +17,7 @@ INSERT INTO categories (name, position) VALUES
 ('経費', 7),
 ('娯楽費', 8),
 ('合計', 9);
+
+
+
+ALTER TABLE categories ADD COLUMN currency VARCHAR(255);

@@ -5,3 +5,7 @@ CREATE TABLE assets (
     initial_balance DECIMAL(15, 2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+ALTER TABLE assets ADD COLUMN current_balance DECIMAL(10, 2);

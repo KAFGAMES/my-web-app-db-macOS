@@ -41,3 +41,8 @@ CREATE TABLE expense_details (
     amount INT,
     description VARCHAR(255)
 );
+
+
+ALTER TABLE monthly_goals ADD COLUMN currency VARCHAR(255);
+ALTER TABLE calendar_data ADD COLUMN currency VARCHAR(255);
+

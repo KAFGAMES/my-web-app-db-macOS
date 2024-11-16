@@ -526,7 +526,7 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     assetId: selectedAsset,
-                    amount: originalExpensee // 支出は減算
+                    amount: originalExpense // 支出は減算
                 }),
             })
             .then(response => response.json())
