@@ -218,6 +218,7 @@ document.getElementById('category-management-btn').addEventListener('click', () 
     document.getElementById('memo-page').style.display = 'none';
     document.getElementById('asset-management-page').style.display = 'none'; // 資産管理ページを非表示
     document.getElementById('category-management-page').style.display = 'block'; // カテゴリ管理ページを表示
+    document.getElementById('favorite-page').style.display = 'none';
 });
 
 // 資産管理ページを開くボタンのイベントリスナー
@@ -226,6 +227,7 @@ document.getElementById('asset-management-btn').addEventListener('click', () => 
     document.getElementById('memo-page').style.display = 'none';
     document.getElementById('category-management-page').style.display = 'none'; // カテゴリ管理ページを非表示
     document.getElementById('asset-management-page').style.display = 'block'; // 資産管理ページを表示
+    document.getElementById('favorite-page').style.display = 'none';
 });
 
 // メモページを開くボタンのイベントリスナー
@@ -234,6 +236,7 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
     document.getElementById('category-management-page').style.display = 'none';
     document.getElementById('asset-management-page').style.display = 'none';
     document.getElementById('memo-page').style.display = 'block'; // メモページを表示
+    document.getElementById('favorite-page').style.display = 'none';
 });
 
 
@@ -2007,7 +2010,7 @@ function renderFavoriteItem(fav) {
     item.dataset.id = fav.id;
 
     const itemText = document.createElement('span');
-    itemText.textContent = `${fav.title}：利益 ${fav.profit}円 支出 ${fav.expense}円 - ${formatDateToJapanese(fav.date)}`;
+    itemText.textContent = `${fav.title}：利益 ${fav.profit}円 支出 ${fav.expense}円 - ${formatDateToJapanese(fav.date)}(カテゴリー：${fav.category}) `;
 
     // お気に入り項目をクリックしたときのイベントリスナーを追加
     itemText.addEventListener('click', () => {
