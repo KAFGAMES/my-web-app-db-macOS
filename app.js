@@ -2010,7 +2010,7 @@ function renderFavoriteItem(fav) {
     item.dataset.id = fav.id;
 
     const itemText = document.createElement('span');
-    itemText.textContent = `${fav.title}：利益 ${fav.profit}円 支出 ${fav.expense}円 - ${formatDateToJapanese(fav.date)}(カテゴリー：${fav.category}) `;
+    itemText.textContent = `${fav.title}-${formatDateToJapanese(fav.date)}(カテゴリー：${fav.category}) `;
 
     // お気に入り項目をクリックしたときのイベントリスナーを追加
     itemText.addEventListener('click', () => {

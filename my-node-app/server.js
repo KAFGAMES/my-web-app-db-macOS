@@ -26,7 +26,7 @@ app.use(cors()); // 全てのオリジンからのリクエストを許可
 
     // 為替レートを取得するAPIエンドポイント
     app.get('/api/usd-jpy', (req, res) => {
-        const pythonProcess = spawn('python', ['fetch_exchange_rate.py']);
+        const pythonProcess = spawn('python3', ['fetch_exchange_rate.py']);
 
         let rateData = '';
         let errorData = '';
