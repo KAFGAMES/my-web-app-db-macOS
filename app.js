@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Helper function to convert amounts based on selected currency
     // 修正後の convertAmount 関数
 function convertAmount(amount, fromCurrency, toCurrency) {
+    console.log(`Converting Amount: ${amount}, From: ${fromCurrency}, To: ${toCurrency}`);
     if (fromCurrency === toCurrency) {
         return amount;
     }
@@ -1590,6 +1591,7 @@ document.getElementById('save-asset-amount-btn').addEventListener('click', async
             .then(response => response.json())
             .then(goalData => {
                 const parsedGoal = parseFloat(goalData.goal_amount) || 0;
+                console.log(`Category: ${category}, Goal Amount: ${goalData.goal_amount}, Parsed: ${parsedGoal}`);
                 callback(parsedGoal);
             })
             .catch(error => {
@@ -2150,25 +2152,36 @@ function removeFavoriteItem(id) {
     function calculateTotalGoalAndUpdateChart() {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
-
+    
         const categories = categoriesList.map(cat => cat.name);
-
+    
         let totalGoal = 0;
         let totalBalance = 0;
+    
+        // let goalPromises = categories.map(category => {
+        //     return new Promise((resolve) => {
+        //         getGoalForCategory(category, year, month, (goalAmount) => {
+        //             let categoryCurrency = categoryCurrencies[category];
+        //             // 通貨の変換を適用
+        //             if (categoryCurrency !== 'JPY') {
+        //                 goalAmount = parseFloat(convertAmount(goalAmount, categoryCurrency, 'JPY'));
+        //             }
+        //             totalGoal += parseFloat(goalAmount) || 0; // NaNを回避
+        //             resolve();
+        //         });
+        //     });
+        // });
 
-        let goalPromises = categories.map(category => {
-            return new Promise((resolve) => {
-                getGoalForCategory(category, year, month, (goalAmount) => {
-                    let categoryCurrency = categoryCurrencies[category];
-                    if (categoryCurrency !== 'JPY') {
-                        goalAmount = parseFloat(convertAmount(goalAmount, categoryCurrency, 'JPY'));
-                    }
-                    totalGoal += parseFloat(goalAmount) || 0;
-                    resolve();
-                });
+        // 各カテゴリの目標値を取得し、合計を計算
+    let goalPromises = categories.map(category => {
+        return new Promise((resolve) => {
+            getGoalForCategory(category, year, month, (goalAmount) => {
+                totalGoal += parseFloat(goalAmount) || 0; // NaNを回避
+                resolve();
             });
         });
-
+    });
+    
         let balancePromises = categories.map(category => {
             return new Promise((resolve) => {
                 loadDataForMonth(category, currentDate, (dataForMonth) => {
@@ -2178,6 +2191,7 @@ function removeFavoriteItem(id) {
                     dataForMonth.forEach((entry) => {
                         let profit = parseFloat(entry.profit) || 0;
                         let expense = parseFloat(entry.expense) || 0;
+                        // 通貨の変換を適用
                         if (entry.currency !== 'JPY') {
                             profit = parseFloat(convertAmount(profit, entry.currency, 'JPY'));
                             expense = parseFloat(convertAmount(expense, entry.currency, 'JPY'));
@@ -2190,13 +2204,17 @@ function removeFavoriteItem(id) {
                 });
             });
         });
-
+    
         Promise.all([...goalPromises, ...balancePromises]).then(() => {
+            console.log('Total Goal:', totalGoal); // デバッグ用
+            console.log('Total Balance:', totalBalance); // デバッグ用
             let percentage = 0;
             if (totalGoal !== 0) {
                 percentage = Math.min(100, Math.max(0, (totalBalance / totalGoal) * 100));
             }
-
+            console.log('Percentage:', percentage); // デバッグ用
+    
+            // グラフの背景色を設定
             let backgroundColor;
             if (totalGoal > 0 && totalBalance >= 0) {
                 backgroundColor = ['green', 'lightgrey'];
@@ -2205,7 +2223,8 @@ function removeFavoriteItem(id) {
             } else {
                 backgroundColor = ['grey', 'lightgrey'];
             }
-
+    
+            // グラフデータを更新
             const chartData = {
                 labels: ['達成率', '未達成率'],
                 datasets: [{
@@ -2213,11 +2232,11 @@ function removeFavoriteItem(id) {
                     backgroundColor: backgroundColor
                 }]
             };
-
+    
             if (goalChart) {
                 goalChart.destroy();
             }
-
+    
             goalChart = new Chart(goalChartCanvas, {
                 type: 'doughnut',
                 data: chartData,
@@ -2231,9 +2250,13 @@ function removeFavoriteItem(id) {
                     }
                 }
             });
-
+    
+            // 表示を更新
             goalDisplay.textContent = `現在の合計目標金額: ${totalGoal} JPY`;
+        }).catch(error => {
+            console.error('合計目標金額の計算中にエラーが発生しました:', error);
         });
     }
+    
 
 });
