@@ -23,8 +23,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         await loadAssets(); // 資産をロード
         // 初期化関数の呼び出し
         await initializeDisplay(); // 為替レートの取得と表示の初期化
-        loadCategories(); // カテゴリの読み込み
-        renderCalendar(currentDate); // カレンダーの初期表示
+        await　loadCategories(); // カテゴリの読み込み
+
+
+        // currentCategory の値に応じて適切な関数を呼び出す
+        if (currentCategory === 'total') {
+            renderCalendarWithTotal();
+            calculateTotalGoalAndUpdateChart();
+        } else {
+            renderCalendar(currentDate);
+            calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
+        }
+
+
         selectToday(); // 今日の日付の選択
         displayGoalAmount(); // 目標金額の表示
 
@@ -279,15 +290,44 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
     categorySelect.addEventListener('change', function() {
         currentCategory = this.value;
 
-        // カレンダーを再描画
-    renderCalendar(currentDate, () => {
-        // カレンダー再描画後に選択状態を再設定
-        const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
-        if (selectedCell) {
-            selectedCell.classList.add('selected');
-            selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    });
+    //     // カレンダーを再描画
+    // renderCalendar(currentDate, () => {
+    //     // カレンダー再描画後に選択状態を再設定
+    //     const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+    //     if (selectedCell) {
+    //         selectedCell.classList.add('selected');
+    //         selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    //     }
+    // });
+
+    if (currentCategory === 'total') {
+        // 合計カテゴリーの場合
+        renderCalendarWithTotal();
+        calculateTotalGoalAndUpdateChart();
+        displayGoalAmount();
+        updateDisplayedAmounts();
+
+        // 入力フィールドを無効化
+        disableInputFields();
+    } else {
+        // 他のカテゴリーの場合
+        renderCalendar(currentDate, () => {
+            const selectedCell = document.querySelector(`[data-date="${selectedDate}"]`);
+            if (selectedCell) {
+                selectedCell.classList.add('selected');
+                selectedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+        calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
+        displayGoalAmount();
+        updateDisplayedAmounts();
+
+        // 入力フィールドを有効化
+        enableInputFields();
+    }
+
+
+
 
         if (currentCategory === '') {
             // カテゴリが選択されていない場合、入力を無効化
@@ -328,8 +368,19 @@ document.getElementById('memo-menu-btn').addEventListener('click', () => {
             addExpenseDetailButton.disabled = false;
 
             loadDataForSelectedDate();
-            // renderCalendar(currentDate);
+
+            // currentCategory に応じてカレンダーを再描画
+        if (currentCategory === 'total') {
+            renderCalendarWithTotal();
+            calculateTotalGoalAndUpdateChart();
+        } else {
+            //renderCalendar(currentDate);
             calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
+        }
+
+
+            // renderCalendar(currentDate);
+           // calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
             displayGoalAmount();
             updateDisplayedAmounts();
         }
@@ -924,13 +975,13 @@ function deleteExpenseWithAsset(expenseId, expenseAmount, selectedAsset) {
 
                     // データをロードしてからカレンダーを描画
                     loadDataForMonth(currentCategory, currentDate, (dataForMonth) => {
-                        renderCalendar(currentDate, dataForMonth); // データを渡してカレンダーを描画
+                       // renderCalendar(currentDate, dataForMonth); // データを渡してカレンダーを描画
                     });
                 } else {
                     // カテゴリが存在しない場合、リセット
                     currentCategory = '';
                     resetInputFields();
-                    renderCalendar(currentDate);
+                   // renderCalendar(currentDate);
                 }
             })
             .catch(error => {
