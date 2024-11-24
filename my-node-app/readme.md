@@ -54,3 +54,8 @@ git reset --hard
 
 git fetch origin main
 git reset --hard origin/main
+
+
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金額管理システム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="preload">
+    <!-- メニューバー -->
+    <div class="menu-bar">
+        <h1>金額管理システム</h1>
+        
+        <!-- プルダウンメニューとメモボタン -->
+        <div class="menu-right">
+            <div id="usd-jpy-rate" style="color: white; font-weight: bold;">ドル円:</div>
+            <select id="category-select">
+                <option value="" disabled selected>選択してください</option>
+    <!-- カテゴリのオプションはJavaScriptで動的に追加されます -->
+            </select>
+            
+
+        
+
+            
+        </div>
+        <div id="hamburger-menu" class="dropdown">
+            <button class="dropdown-btn">≡</button>
+            <div class="dropdown-content">
+                <!-- 日記家計簿ボタン -->
+                <button id="diary-ledger-btn">日記家計簿</button>
+                <!-- カテゴリ管理ページへのボタンを追加 -->
+                <button id="category-management-btn">カテゴリ管理</button>
+                <!-- 資産管理ボタン -->
+                <button id="asset-management-btn">資産管理</button>
+                <!-- ...既存のメニュー項目... -->
+                <button id="favorite-menu-btn">お気に入り</button>
+                <!-- メモボタンを追加 -->
+                <button id="memo-menu-btn">メモ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ログインページ -->
+    <div id="login-page">
+        <h2>ログイン</h2>
+        <input type="text" id="login-username" placeholder="ユーザー名">
+        <input type="password" id="login-password" placeholder="パスワード">
+        <button id="login-btn">ログイン</button>
+        <p>アカウントをお持ちでないですか？ <a href="#" id="show-register">新規登録</a></p>
+    </div>
+
+    <!-- 登録ページ -->
+    <div id="register-page" style="display: none;">
+        <h2>新規登録</h2>
+        <input type="text" id="register-username" placeholder="ユーザー名">
+        <input type="password" id="register-password" placeholder="パスワード">
+        <button id="register-btn">登録</button>
+        <p>すでにアカウントをお持ちですか？ <a href="#" id="show-login">ログイン</a></p>
+    </div>
+
+
+    <!-- メインコンテンツを囲む -->
+    <div id="main-content" style="display: none;">
+        <div class="container">
+            <!-- 左側: 利益と支出の入力欄 -->
+            <div class="input-panel">
+                <h3>利益と支出を入力</h3>
+
+                <!-- ここに資産選択のドロップダウンを追加 -->
+<label for="asset-select">資産を選択:</label>
+<select id="asset-select">
+<!-- 資産のオプションを動的にロードすることを想定 -->
+</select>
+                
+
+                <!-- 利益の入力欄と削除ボタンを囲むdivを追加 -->
+                <div class="input-with-delete">
+                    <label for="profit-input"><span class="profit-label">利益:</span></label>
+                    <input type="text" id="profit-input" placeholder="利益額を入力">
+                    <!-- 利益の削除ボタンを追加 -->
+                    <button class="delete-btn" id="delete-profit-btn">×</button>
+                </div>
+
+                    
+
+
+                <button id="add-profit-detail-btn">+ 利益詳細</button>
+                <!-- 利益詳細のモーダル -->
+                <div id="profit-detail-modal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>利益の詳細を入力</h3>
+                        <input type="number" id="profit-detail-amount" placeholder="金額">
+                        <input type="text" id="profit-detail-description" placeholder="内容">
+                        <button id="save-profit-detail-btn">保存</button>
+                    </div>
+                </div>
+                <div id="profit-details-list" class="details-list"></div> <!-- 利益の詳細リストの表示エリア -->
+
+                <!-- 支出の入力欄と削除ボタンを囲むdivを追加 -->
+                <div class="input-with-delete">
+                    <label for="expense-input"><span class="expense-label">支出:</span></label>
+                    <input type="text" id="expense-input" placeholder="支出額を入力">
+                    <!-- 支出の削除ボタンを追加 -->
+                    <button class="delete-btn" id="delete-expense-btn">×</button>
+                </div>
+
+
+
+
+                <button id="add-expense-detail-btn">+ 支出詳細</button>
+                <!-- 支出詳細のモーダル -->
+                <div id="expense-detail-modal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>支出の詳細を入力</h3>
+                        <input type="number" id="expense-detail-amount" placeholder="金額">
+                        <input type="text" id="expense-detail-description" placeholder="内容">
+                        <button id="save-expense-detail-btn">保存</button>
+                    </div>
+                </div>
+                <div id="expense-details-list" class="details-list"></div> <!-- 支出の詳細リストの表示エリア -->
+
+
+
+                <button id="save-btn">保存</button>
+                <!-- ここにお気に入りボタンを追加 -->
+                <button id="add-favorite-btn">お気に入りに追加</button>
+            </div>
+
+            <!-- 中央: カレンダー -->
+            <div class="calendar">
+                <div class="calendar-header">
+                    <button id="prev-month">&lt;</button>
+                    <h2 id="month-year">October 2024</h2>
+                    <button id="next-month">&gt;</button>
+                </div>
+                <div id="monthly-balance" class="monthly-balance">月間損益: 0 JPY</div>
+                <table class="calendar-table">
+                    <thead>
+                        <tr>
+                            <th>Sun</th>
+                            <th>Mon</th>
+                            <th>Tue</th>
+                            <th>Wed</th>
+                            <th>Thu</th>
+                            <th>Fri</th>
+                            <th>Sat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendar-body">
+                        <!-- JavaScriptでカレンダーの日付を動的に生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 右側: 目標金額入力欄と円グラフ -->
+            <div class="goal-panel">
+                <h3>目標金額を設定</h3>
+                <input type="number" id="goal-input" placeholder="目標金額を入力">
+                <button id="goal-save-btn">目標を保存</button>
+                <p id="goal-display" class="highlight-goal">現在の目標金額: 0</p> <!-- 目標金額を表示する新しい要素 -->
+                <canvas id="goal-chart" width="200" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- メモパネル -->
+        <div class="memo-panel">
+            <!-- 日付とメモ削除ボタンを横並びにする -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div id="memo-date" style="font-weight: bold; margin-bottom: 10px;"></div> <!-- 日付を表示する場所 -->
+                <!-- メモの削除ボタンを追加 -->
+                <button id="delete-memo-btn" class="delete-btn">×</button>
+            </div>
+            <textarea id="memo-input" rows="15" placeholder="選んだ日付のメモをここに入力..."></textarea>
+            <button id="memo-save-btn">メモを保存</button>
+        </div>
+    </div> <!-- main-contentを閉じる -->
+
+    <!-- メモページ -->
+    <div id="memo-page" style="display: none;">
+        <h2>メモ - <span id="memo-category-name"></span></h2>
+        <textarea id="category-memo-input" rows="20" placeholder="メモを入力..."></textarea>
+        <button id="category-memo-save-btn">メモを保存</button>
+        <button id="category-memo-back-btn">戻る</button>
+    </div>
+    <!-- カテゴリ管理ページ -->
+    <div id="category-management-page" style="display: none;">
+        <h2>カテゴリ管理</h2>
+        <div id="category-list">
+        <!-- カテゴリー一覧がここに動的に追加されます -->
+        </div>
+        <button id="add-category-btn">新しいカテゴリを追加</button>
+        <button id="category-management-back-btn">戻る</button>
+    </div>
+
+    <div id="asset-management-page" style="display: none;">
+        <h2>資産管理</h2>
+        <div id="asset-total-display" style="font-weight: bold; font-size: 16px; margin-bottom: 10px;">合計: 0 JPY</div>
+        <div id="asset-list">
+            <!-- 資産一覧がここに動的に追加されます -->
+        </div>
+        <button id="add-asset-btn">新しい資産を追加</button>
+        <button id="asset-management-back-btn">戻る</button>
+    </div>
+
+    <div id="favorite-page" style="display: none;">
+        <h2>お気に入りリスト</h2>
+        <div id="favorite-list">
+            <!-- お気に入りの日付がここに動的に追加される -->
+        </div>
+        <style>
+            .favorite-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px;
+                border-bottom: 1px solid #ccc;
+            }
+        
+            .delete-button {
+                background-color: transparent;
+                border: none;
+                color: red;
+                font-size: 16px;
+                cursor: pointer;
+            }
+        </style>
+        <button id="favorite-back-btn">戻る</button>
+    </div>
+    
+    
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
