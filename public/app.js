@@ -138,36 +138,36 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 初期化で現在の日付を選択状態にする
     // selectedDateの初期化
-    const today = new Date();
-    selectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // const today = new Date();
+    // selectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    try {
+    // try {
 
-        await loadAssets(); // 資産をロード
-        // 初期化関数の呼び出し
-        await initializeDisplay(); // 為替レートの取得と表示の初期化
-        await　loadCategories(); // カテゴリの読み込み
-
-
-        // currentCategory の値に応じて適切な関数を呼び出す
-        if (currentCategory === 'total') {
-            renderCalendarWithTotal();
-            calculateTotalGoalAndUpdateChart();
-        } else {
-            renderCalendar(currentDate);
-            calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
-        }
+    //     await loadAssets(); // 資産をロード
+    //     // 初期化関数の呼び出し
+    //     await initializeDisplay(); // 為替レートの取得と表示の初期化
+    //     await　loadCategories(); // カテゴリの読み込み
 
 
-        selectToday(); // 今日の日付の選択
-        displayGoalAmount(); // 目標金額の表示
+    //     // currentCategory の値に応じて適切な関数を呼び出す
+    //     if (currentCategory === 'total') {
+    //         renderCalendarWithTotal();
+    //         calculateTotalGoalAndUpdateChart();
+    //     } else {
+    //         renderCalendar(currentDate);
+    //         calculateMonthlyBalance(currentDate.getFullYear(), currentDate.getMonth());
+    //     }
 
-        // 初期状態でデータをロード
-        loadDataForSelectedDate(); // selectedDateに基づきデータをロード
+
+    //     selectToday(); // 今日の日付の選択
+    //     displayGoalAmount(); // 目標金額の表示
+
+    //     // 初期状態でデータをロード
+    //     loadDataForSelectedDate(); // selectedDateに基づきデータをロード
         
-    } catch (error) {
-        console.error("初期化中にエラーが発生しました:", error);
-    }
+    // } catch (error) {
+    //     console.error("初期化中にエラーが発生しました:", error);
+    // }
     // DOM要素の取得
 
     // // ページロード時に初期選択状態のデータを反映する
